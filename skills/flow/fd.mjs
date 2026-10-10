@@ -2,10 +2,12 @@
 //   fd <file|->            Unicode text (paste it into a ```text fence)
 //   fd <file> --ascii      plain ASCII (+ - | >) for limited terminals
 //   fd <file> --json       the parsed diagram, for diagrams:walkthrough
+//   fd --lint <file|->     check a hand-drawn text diagram (a ```text fence is fine) before pasting it
 // Input: a .mmd file, a Markdown file with a ```mermaid fence, a scene .json with a "diagram" key, or stdin.
 // Notes about fit (width, height, unsupported syntax) go to stderr; stdout carries only the result.
 import { readFileSync } from 'node:fs'
 import { parseMermaid, renderMermaidASCII } from 'beautiful-mermaid'
+import { lint } from './lint.mjs'
 
 const MAX_COLS = 90, MAX_ROWS = 45
 const args = process.argv.slice(2)
@@ -96,6 +98,13 @@ function renderText(src, ascii) {
 }
 
 try {
+  if (flag('--lint')) {
+    const res = lint(readFileSync(file === '-' ? 0 : file, 'utf8'), { maxCols: MAX_COLS, maxRows: MAX_ROWS })
+    for (const e of res.errors) process.stderr.write(`fd: row ${e.row}, col ${e.col}: ${e.msg}\n`)
+    for (const n of res.notes) process.stderr.write(`fd: note: ${n}\n`)
+    process.stderr.write(`fd: lint ${res.ok ? 'ok' : `found ${res.errors.length + res.notes.length} problem(s)`}: ${res.width} cols x ${res.rows} rows\n`)
+    process.exit(res.ok ? 0 : 1)
+  }
   let src = readSource(file)
   if (flag('--json')) {
     process.stdout.write(JSON.stringify(isSequence(src) ? parseSequence(src) : parseFlow(src)) + '\n')

@@ -1,6 +1,6 @@
 ---
 name: flow
-description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits) from Mermaid. Renders Unicode box art to paste inline in a chat reply (terminal and desktop app), or a clean/sketch-style picture page. Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
+description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits) from Mermaid. Renders Unicode box art to paste inline in a chat reply (terminal and desktop app), checks a hand-drawn text diagram for misaligned lines (fd --lint), or a clean/sketch-style picture page. Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
 ---
 
 # Flow and sequence diagrams
@@ -25,6 +25,27 @@ A sequence shows what a flow hides. Example: at checkout the shop tells the cust
 
 ## 1. Chat text (works everywhere)
 
+Two ways to make it. Both end in a ```` ```text ```` fence.
+
+| Diagram | Make it by | Why |
+|---|---|---|
+| About 12 boxes or fewer, chat only | **drawing it by hand**, then `fd --lint` | Hand layout reads better: tight groups, labels on arrows, a legend row |
+| Also needs a picture page or a walkthrough, or is larger | Mermaid, then `fd` | One source for every output, alignment is exact |
+
+### By hand, then lint
+
+Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`, dotted `┄ ┆` for async, rounded `╭ ╮ ╰ ╯` for storage, arrowheads `▶ ◀ ▲ ▼` (sync) and `▷ ◁ △ ▽` (async). Lay it out across and down: put a group frame around parallel boxes, label arrows next to the line, and add one `Legend:` row for the line styles. Then check it:
+
+```bash
+"${CLAUDE_SKILL_DIR}/fd" --lint diagram.txt     # or pipe the text in: ... | fd --lint -
+```
+
+- The check finds lines that are one column off, junctions with nothing under them, arrowheads that stop short of a box, and anything over 90 columns or 45 rows. Each problem has its row and column. Fix every one, then lint again. Paste only a diagram that passes.
+- Rows that start with `Legend` or `Key` are not checked, because their sample arrows touch nothing.
+- A line that touches a box edge or crosses another line without a junction is allowed. A line next to a junction whose arm points at empty space is reported as misplaced.
+
+### From Mermaid
+
 ```bash
 "${CLAUDE_SKILL_DIR}/fd" diagram.mmd
 ```
@@ -36,13 +57,13 @@ A sequence shows what a flow hides. Example: at checkout the shop tells the cust
 - Chat text is single-colour by nature. Shapes carry meaning: `[( )]` store (rounded), `{ }` decision (◇), `-.->` async (dotted).
 - `fd file --ascii` gives plain + - | > for limited terminals. `fd file --json` prints the parsed diagram.
 
-### Bigger flows that spread across and down
+#### Bigger Mermaid flows that spread across and down
 
 `graph LR` with a fan-in and a fan-out still fits chat when it stays under 90 columns. The layout follows the order of the arrows, so write the source with care:
 
 - Write the main path's arrows first. The first arrow out of a node stays on the main row; later arrows branch down. (`orders --> pay` before `orders --> db` keeps the payment path straight.)
 - Put the parallel ends of a fan-in or fan-out in a `subgraph` (`Clients`, `Workers`). The group frame keeps their arrows apart.
-- Read every arrow in the output before you paste it. If two arrows share a line segment (a `┴` or `┬` where they join), a reader cannot tell which box an arrow comes from. Reorder the arrows or add a subgraph until each arrow has its own path.
+- Lint the output too (`fd diagram.mmd | fd --lint -`): the renderer can put a line one column off. Read every arrow before you paste it. If two arrows share a line segment (a `┴` or `┬` where they join), a reader cannot tell which box an arrow comes from. Reorder the arrows or add a subgraph until each arrow has its own path.
 
 ## 2. Picture page (clean or sketch)
 
@@ -83,4 +104,4 @@ python3 "${CLAUDE_SKILL_DIR}/diagram.py" diagram.mmd --look look.json --title "C
 
 - Needs Node 18+ and Python 3.9+. Libraries come from the plugin's `package.json`; Claude Code installs them on plugin install and update. In a loose copy, run `npm ci` where `package.json` is: beautiful-mermaid (MIT) for text and parsing, libavoid-js (LGPL) for arrows, roughjs (MIT) for the sketch, and @fontsource/architects-daughter (OFL). All run at build time; nothing loads from a CDN.
 - If roughjs or libavoid is missing, the picture falls back (clean theme, simple curves) with a warning.
-- The examples are in `examples/`: `checkout.flow.mmd` (+ `checkout.look.json`) and `checkout.seq.mmd`.
+- The examples are in `examples/`: `checkout.flow.mmd` (+ `checkout.look.json`), `checkout.seq.mmd`, and `shop.hand.txt` (a hand-drawn diagram that passes `--lint`).
