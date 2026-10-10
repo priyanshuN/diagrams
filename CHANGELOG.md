@@ -5,6 +5,7 @@ Installed copies update only when the version in `.claude-plugin/plugin.json` go
 ## 0.1.1 (2026-10-11)
 
 - Sketch theme: darker, easier text. Box names get a thin ink outline that thickens the hand-drawn letters; arrow labels are 1 px larger and keep their paper outline, so a line never runs through them. Hatching is lighter (light mode 16% → 10%, dark mode 24% → 16% at rest). All text stays sharp vector text.
+- Walkthrough: phone-layout warnings suggest a fix that works, and the page self-test catches arrows that run side by side.
 
 ## 0.1.0 (2026-10-11)
 
