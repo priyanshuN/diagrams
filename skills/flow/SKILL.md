@@ -109,7 +109,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 - Define each node with its label (`pay[Payment API]`) **before** the first arrow that uses it. The parser keeps a node's first mention, so `shop --> pay` first leaves the label as "pay". `fd` stops with an error when this happens.
 - A second label line is the sub-label: `shop[Shop API<br/>order service]`.
 - Shapes: `[ ]` service, `[( )]` store, `{ }` decision. Arrows: `-->` sync, `-.->` async, `-->|label|` labelled.
-- Sequence arrows: `->>` call, `-->>` reply (dashed), `-)` async. Messages are numbered 1, 2, 3… in order. The walkthrough lights them by number.
+- Sequence arrows: `->>` call, `-->>` reply (dashed), `-)` async (dotted in text, like a flow). Messages are numbered 1, 2, 3… in order. The walkthrough lights them by number.
 
 ## Setup and limits
 
