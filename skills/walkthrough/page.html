@@ -240,6 +240,15 @@ window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const
  svg.querySelectorAll('.edge').forEach(e=>{const [f,t]=e.dataset.e.split('>'),L=e.getTotalLength();
   for(let k=1;k<30;k++){const p=e.getPointAtLength(L*k/30);const hit=boxes.find(x=>x.id!==f&&x.id!==t&&p.x>x.b.x+2&&p.x<x.b.x+x.b.width-2&&p.y>x.b.y+2&&p.y<x.b.y+x.b.height-2);
    if(hit){out.problems.push(`edge ${e.dataset.e} crosses ${hit.id}`);break}}});
+ // two arrows that share no box but run parallel and close read as one line (the build's side_by_side, on the drawn paths)
+ if(!svg.classList.contains('seq')){const es=[...svg.querySelectorAll('.edge')].map(e=>{const L=e.getTotalLength(),n=Math.max(2,Math.ceil(L/4));
+   return{k:e.dataset.e,ends:e.dataset.e.split('>'),p:Array.from({length:n+1},(_,j)=>e.getPointAtLength(L*j/n))}});
+  es.forEach((x,i)=>es.slice(i+1).forEach(y=>{if(x.ends.some(v=>y.ends.includes(v)))return;let run=0,best=0;
+   for(let j=1;j<x.p.length;j++){const q=x.p[j],pq=x.p[j-1],ax=q.x-pq.x,ay=q.y-pq.y;let m=0,bd=1e9;
+    y.p.forEach((r,w)=>{const d=Math.hypot(q.x-r.x,q.y-r.y);if(d<bd){bd=d;m=w}});
+    const r=y.p[Math.max(1,m)],pr=y.p[Math.max(1,m)-1],bx=r.x-pr.x,by=r.y-pr.y,nn=Math.hypot(ax,ay)*Math.hypot(bx,by);
+    if(bd<16&&nn>0&&Math.abs(ax*by-ay*bx)/nn<0.26){run+=Math.hypot(ax,ay);best=Math.max(best,run)}else run=0}
+   if(best>20)out.problems.push(`edges ${x.k} and ${y.k} run side by side`)}))}
  nd.forEach(n=>{const w=n.querySelector('.shape').getBBox().width;n.querySelectorAll('text').forEach(t=>{if(t.getComputedTextLength()>w-8)out.problems.push(`text "${t.textContent}" overflows ${n.dataset.n}`)})});
  const tl=[...svg.querySelectorAll('.glbl,.elbl')].filter(t=>getComputedStyle(t).opacity!=='0').map(t=>({t:t.textContent,b:t.getBBox()}));
  tl.forEach((p,i)=>tl.slice(i+1).forEach(q=>{if(overlap(p.b,q.b))out.problems.push(`labels "${p.t}" and "${q.t}" overlap`)}));

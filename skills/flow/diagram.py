@@ -376,6 +376,13 @@ def story_order(scene):
     return [by_id[i] for i in seen] + [n for n in scene['nodes'] if n['id'] not in seen]
 
 
+def reorder_hint(ids):
+    """The fix for a layout warning on the phone column, which ignores "at" and stacks boxes in story order."""
+    ids = list(dict.fromkeys(ids))
+    return ('the phone column ignores "at" and stacks boxes in the order the steps first light them: '
+            f'light one of {", ".join(ids)} in another step, or drop one of the arrows')
+
+
 def build_svg(scene, cols, use_at, tag, warnings):
     nodes = scene['nodes']
     # the gap between columns must fit the widest label of an arrow running between two boxes in a row
@@ -442,7 +449,8 @@ def build_svg(scene, cols, use_at, tag, warnings):
         hits = [n['id'] for n in nodes if n['id'] not in (ed['from'], ed['to'])
                 and any(inside(p, pos[n['id']]) for p in samples)]
         if hits:
-            warnings.append(f'[{tag}] edge {ed["key"]} passes behind node(s) {hits}; set "at" positions to route around')
+            fix = 'set "at" positions to route around' if use_at else reorder_hint(hits + [ed['from'], ed['to']])
+            warnings.append(f'[{tag}] edge {ed["key"]} passes behind node(s) {hits}; {fix}')
         xs, ys = [p[0] for p in samples], [p[1] for p in samples]
         boxes.append((min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)))
         skip = ' skip' if lane_key else ''
@@ -453,7 +461,8 @@ def build_svg(scene, cols, use_at, tag, warnings):
             if pts and len(pts) >= 2:
                 lx, ly, anchor, lb, clear = place_label(pts, ed['label'], blocked + elabel_boxes)
                 if not clear:
-                    warnings.append(f'[{tag}] the label of edge {ed["key"]} has no clear spot on its arrow; shorten it or space the boxes')
+                    fix = 'shorten it or space the boxes' if use_at else 'shorten it, or ' + reorder_hint([ed['from'], ed['to']])
+                    warnings.append(f'[{tag}] the label of edge {ed["key"]} has no clear spot on its arrow; {fix}')
             else:
                 lw = text_w(ed['label'], 11.5)
                 lb = (lx if anchor == 'start' else lx - lw if anchor == 'end' else lx - lw / 2, ly - 12, lw, 16)
@@ -462,7 +471,8 @@ def build_svg(scene, cols, use_at, tag, warnings):
             elabel_boxes.append(lb); boxes.append(lb)
             labels.append(f'<text class="elbl c-{col}{skip}" data-e="{e(ed["key"])}" x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}">{e(ed["label"])}</text>')
     for k1, k2 in side_by_side(routes):
-        warnings.append(f'[{tag}] arrows {k1} and {k2} run side by side and read as one line; move a box with "at"')
+        fix = 'move a box with "at"' if use_at else reorder_hint(k1.split('>') + k2.split('>'))
+        warnings.append(f'[{tag}] arrows {k1} and {k2} run side by side and read as one line; {fix}')
     node_out = []
     for n in nodes:
         x, y, nw, nh = pos[n['id']]
