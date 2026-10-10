@@ -85,6 +85,10 @@ function renderText(src, ascii) {
     // compare the name rows only: the box borders differ (┬ above the lifelines, ┴ below)
     const last = out.map(l => l.trimEnd()).filter(Boolean)
     if (last.length > 8 && last[1] === last.at(-2)) out = out.slice(0, out.lastIndexOf(last.at(-3)))
+  } else {
+    // where two arrows merge into one box, the library draws the head one column right of the
+    // line ("│▼"); put the head on the line so it points into the box, not past its edge
+    out = out.map(l => l.replace(/[│┆]▼(?=\s|$)/g, '▼ ').replace(/\|v(?=\s|$)/g, 'v ').trimEnd())
   }
   while (out.length && !out[0]) out.shift()
   while (out.length && !out.at(-1)) out.pop()

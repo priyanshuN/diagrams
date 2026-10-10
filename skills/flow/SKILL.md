@@ -36,6 +36,14 @@ A sequence shows what a flow hides. Example: at checkout the shop tells the cust
 - Chat text is single-colour by nature. Shapes carry meaning: `[( )]` store (rounded), `{ }` decision (◇), `-.->` async (dotted).
 - `fd file --ascii` gives plain + - | > for limited terminals. `fd file --json` prints the parsed diagram.
 
+### Bigger flows that spread across and down
+
+`graph LR` with a fan-in and a fan-out still fits chat when it stays under 90 columns. The layout follows the order of the arrows, so write the source with care:
+
+- Write the main path's arrows first. The first arrow out of a node stays on the main row; later arrows branch down. (`orders --> pay` before `orders --> db` keeps the payment path straight.)
+- Put the parallel ends of a fan-in or fan-out in a `subgraph` (`Clients`, `Workers`). The group frame keeps their arrows apart.
+- Read every arrow in the output before you paste it. If two arrows share a line segment (a `┴` or `┬` where they join), a reader cannot tell which box an arrow comes from. Reorder the arrows or add a subgraph until each arrow has its own path.
+
 ## 2. Picture page (clean or sketch)
 
 ```bash
