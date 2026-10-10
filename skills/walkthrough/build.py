@@ -8,8 +8,8 @@ PyTorch (CPU) elsewhere. A system voice (macOS `say`, else espeak-ng) is used on
 --allow-fallback.
 
 usage:
-  uv run build.py scene.json [-o out.html] [--voice af_heart] [--speed 1.0]
-  uv run build.py scene.json --check          # validate + layout + pronunciation preview, no audio
+  nw scene.json [-o out.html] [--voice af_heart] [--speed 1.0]
+  nw scene.json --check          # validate + layout + pronunciation preview, no audio
 Prints one JSON object on stdout; everything else goes to stderr.
 """
 import argparse, base64, contextlib, datetime, html, io, json, math, os, platform, re, shutil, subprocess, sys, tempfile, wave

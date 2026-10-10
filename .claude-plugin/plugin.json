@@ -7,5 +7,12 @@
   },
   "homepage": "https://github.com/priyanshuN/diagrams#readme",
   "repository": "https://github.com/priyanshuN/diagrams",
-  "keywords": ["diagrams", "mermaid", "sequence-diagram", "walkthrough", "skills"]
+  "license": "MIT",
+  "keywords": [
+    "diagrams",
+    "mermaid",
+    "sequence-diagram",
+    "walkthrough",
+    "skills"
+  ]
 }

@@ -3,6 +3,6 @@
 # Usage: pic file.mmd [--look look.json] [--title T] [--theme clean] [-o out.html]
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if command -v uv >/dev/null 2>&1; then
-  exec uv run -q --no-project --python 3.12 "$here/diagram.py" "$@"
+  exec uv run -q --no-project --frozen --python 3.12 "$here/diagram.py" "$@"
 fi
 exec python3 "$here/diagram.py" "$@"

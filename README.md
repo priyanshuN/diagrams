@@ -34,6 +34,21 @@ Both skills run on uv's Python 3.12, so no system Python upgrade is needed on ei
 
 The walkthrough voice is Kokoro-82M on every machine: MLX on Apple silicon, PyTorch (CPU-only wheels) on Linux and Intel Macs. Its environment lives in `~/.local/share/narrated-walkthrough/venv` (about 1.2 GB on Linux, mostly PyTorch). The first build downloads the Kokoro model (about 340 MB). Audio is AAC through `afconvert` on macOS or `ffmpeg` elsewhere; without either, the page holds WAV and is about ten times bigger.
 
+## What it runs and fetches
+
+Everything runs on your machine. The plugin sends no data anywhere: no telemetry, no API calls, no uploads.
+
+| When | What runs or downloads | From |
+|---|---|---|
+| Plugin install | the Node packages in `package-lock.json`: beautiful-mermaid, libavoid-js (includes a WebAssembly router), roughjs, @fontsource/architects-daughter | the npm registry |
+| `flow` | `node` scripts (`fd.mjs`, `avoid_route.mjs`, `rough.mjs`) and `python` (`diagram.py`, standard library only); they read your diagram file and write the page or text you ask for | nothing |
+| First `walkthrough` build | `uv run --frozen` creates a Python environment in `~/.local/share/narrated-walkthrough/venv` from `uv.lock` (on Linux, CPU-only PyTorch from download.pytorch.org) | PyPI, download.pytorch.org |
+| First `walkthrough` build | the Kokoro-82M voice model (about 340 MB), cached in `~/.cache/huggingface` | huggingface.co |
+| First `walkthrough` build | the English text-to-phoneme model that the misaki library loads, if it is not installed yet | the misaki/spaCy defaults |
+| Each `walkthrough` build | `afconvert` (macOS) or `ffmpeg` (elsewhere) to compress the audio | nothing |
+
+The pages the skills write are single, self-contained HTML files: fonts and scripts are inlined, and nothing loads from a CDN.
+
 ## Developing
 
 Edit here, test with the scripts in place (`skills/flow/fd`, `skills/walkthrough/nw`), then push. Validate with `claude plugin validate .`. There is no `version` field on purpose, so every pushed commit reaches every machine.
