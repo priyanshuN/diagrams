@@ -80,6 +80,8 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 
 `--check` runs in about 2 seconds and generates no audio. It prints JSON with:
 - **`warnings`:** schema errors, arrows that pass behind a node, two unrelated arrows that run side by side, an arrow label with no clear spot, labels too wide for their box, a group covering a node that isn't in it, symbols left in the spoken text, steps that are too long, and `src` paths that don't exist.
+- **`ok`:** false when there is any warning or error. The full build still writes the page with warnings and reports `ok:true`; read its `warnings` too.
+- **`[phone]` warnings** come from the phone column, which ignores `at`. Fix them by changing which step first lights one of the named boxes, or by dropping an arrow, not by moving `at`.
 - **`pronunciation`:** each spoken line, plus the phonemes for every acronym, number and symbol. Read them. A wrong reading gets an entry in `lexicon`, either the scene's own or the shared `${CLAUDE_SKILL_DIR}/lexicon.json` for recurring terms. The value is plain words ("IST" → "India time") or misaki inline phonemes (`"ARC": "[ARC](/ˌAˌɑɹsˈi/)"`).
 - The speech rules already handle ₹ amounts (→ "842 rupees and 82 paise"), 24-hour times (02:00 → "2 AM"), vN.N.N versions, arrows, "e.g.", "i.e." and "&".
 
@@ -100,7 +102,8 @@ The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `cues
    - text wider than its box;
    - the on-screen label size, which must be at least 10 px;
    - the audio duration against the build;
-   - arrow and group labels that overlap each other or a box.
+   - arrow and group labels that overlap each other or a box;
+   - two arrows that share no box but run side by side (flows only).
    `ok:true` is the bar to pass.
 3. Run it once at desktop width (`resize_window` 1100×900) and once at `mobile`, then reset to `desktop`. Take one screenshot of each layout.
 4. Give the user the path. Mention `#3`-style deep links, the number keys, the speed menu, "Test me" and "Copy as notes", which copies the walkthrough as Markdown notes.
