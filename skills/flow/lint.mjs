@@ -62,7 +62,7 @@ export function lint(text, { maxCols = 90, maxRows = 45 } = {}) {
           if (!vertical && (ARMS[n] & (U | D))) continue          // a line leaving a box side, or a crossing
           if (vertical && inLabel(r + dr, c + dc)) continue        // a label sits in the line
           if (!vertical && n === ' ' && WORD.test(at(r, c + 2 * dc))) continue   // "─ Title ─" gap
-          if (!vertical && WORD.test(n)) continue                  // "──label──"
+          if (!vertical && inLabel(r, c + dc)) continue            // "──label──", "─gRPC─/─REST─"
           if (vertical && (ARMS[n] & (L | R)))
             err(r, c, `'${ch}' misses the '${at(r + dr, c + near)}' ${Math.abs(near)} column(s) to the ${near < 0 ? 'left' : 'right'}: shift the line`)
           else
@@ -73,7 +73,7 @@ export function lint(text, { maxCols = 90, maxRows = 45 } = {}) {
       if (tail) {
         const [tr, tc] = STEP[tail], [hr, hc] = [-tr, -tc]
         const t = at(r + tr, c + tc), h = at(r + hr, c + hc)
-        if (!(arms(t) & OPP[tail])) err(r, c, `arrowhead '${ch}' has no line behind it`)
+        if (!(arms(t) & OPP[tail]) && !inLabel(r + tr, c + tc)) err(r, c, `arrowhead '${ch}' has no line behind it`)
         const into = tail === U || tail === D ? (L | R) : (U | D)
         const onLifeline = (ARMS[at(r - 1, c)] & D) && (ARMS[at(r + 1, c)] & U)
         if (!(ARMS[h] & into) && !WORD.test(h) && !onLifeline) err(r, c, `arrowhead '${ch}' points at ${h === ' ' ? 'empty space' : `'${h}'`}, not a box edge`)

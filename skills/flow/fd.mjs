@@ -113,14 +113,18 @@ try {
     else parseFlow(src)                              // catches nodes used before their definition
     let lines = renderText(src, flag('--ascii'))
     let width = Math.max(...lines.map(l => [...l].length))
+    // the Unicode output must pass the same check as a hand-drawn diagram
+    const broken = ls => flag('--ascii') ? [] : lint(ls.join('\n'), { maxCols: Infinity, maxRows: Infinity }).errors
     const lr = src.match(/^(graph|flowchart)\s+(LR|RL)\b/)
-    if (lr && width > MAX_COLS) {
+    const why = lr && (width > MAX_COLS ? `was over ${MAX_COLS} columns` : broken(lines).length ? 'had misrouted lines' : '')
+    if (why) {
       // left-to-right text layouts get wide and misroute arrows; top-to-bottom stays clean
       src = src.replace(lr[0], `${lr[1]} TD`)
       lines = renderText(src, flag('--ascii'))
       width = Math.max(...lines.map(l => [...l].length))
-      notes.push(`switched ${lr[2]} to TD: the left-to-right text was over ${MAX_COLS} columns`)
+      notes.push(`switched ${lr[2]} to TD: the left-to-right text ${why}`)
     }
+    for (const e of broken(lines)) notes.push(`row ${e.row}, col ${e.col}: ${e.msg}: fix the text by hand, or change the Mermaid`)
     if (width > MAX_COLS) notes.push(`${width} columns is wider than ${MAX_COLS}: shorten labels, or split the diagram`)
     if (lines.length > MAX_ROWS) notes.push(`${lines.length} rows is taller than ${MAX_ROWS}: split it, or offer an HTML page`)
     process.stdout.write(lines.join('\n') + '\n')
