@@ -28,7 +28,7 @@ Mermaid ─┬─► fd file.mmd ─────────► Unicode text in 
 
 | The reader asks | Draw | Mermaid header |
 |---|---|---|
-| What are the parts, and what flows between them? | flow | `graph TD` |
+| What are the parts, and what flows between them? | flow | `graph LR` (a chain) or `graph TD` (a tree) |
 | In what order do calls happen? Who waits for whom? When does the reply go back? | sequence | `sequenceDiagram` |
 | Both (a new system, an incident) | flow first, then the sequence of the one path that matters | both |
 
@@ -63,7 +63,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 
 - Paste stdout into a ```` ```text ```` fence. It is plain Unicode, so it reads the same in the terminal and in the desktop app. Never paste raw Mermaid into chat: neither surface renders it.
 - stderr reports the size (`fd: 43 cols x 37 rows`) and notes. Keep chat text within 90 columns and about 45 rows. If a note says it is too big, shorten labels, split the diagram, or make a picture instead.
-- Use `graph TD` for chat. `fd` switches a too-wide `LR` flow to `TD` by itself, because left-to-right text gets wide and misroutes arrows.
+- Use `graph LR` for a chain of calls: it reads left to right, like the request, and stays short. Use `graph TD` for a tree or a wide fan-out. `fd` switches an `LR` flow to `TD` by itself when it is wider than 90 columns or its lines fail the check.
 - In a sequence, write branches as a `Note over X: ...`. `alt`/`opt`/`loop` blocks render badly as text, and `fd` warns about them.
 - Chat text is single-colour by nature. Shapes carry meaning: `[( )]` store (rounded), `{ }` decision (◇), `-.->` async (dotted).
 - `fd file --ascii` gives plain + - | > for limited terminals. `fd file --json` prints the parsed diagram.

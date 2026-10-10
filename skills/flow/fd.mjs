@@ -79,6 +79,38 @@ function parseFlow(src) {
 
 const isSequence = src => /^sequenceDiagram\b/.test(src)
 
+// in a left-to-right layout the library can draw an edge's start ("├") a few columns right of its
+// box, with a gap after the box border ("│route engine│  ├┄┄solve"); move the junction onto the border
+function joinStrayJunctions(out) {
+  const g = out.map(l => [...l])
+  const at = (r, c) => g[r]?.[c] ?? ' '
+  const vert = ch => '│┆┬┴┼├┤┌┐└┘╭╮╰╯'.includes(ch)
+  g.forEach((row, r) => row.forEach((ch, c) => {
+    if (ch !== '├' || vert(at(r - 1, c)) || vert(at(r + 1, c))) return
+    let b = c - 1
+    while (at(r, b) === ' ') b--
+    if (b === c - 1 || at(r, b) !== '│') return
+    const line = '─┄'.includes(at(r, c + 1)) ? at(r, c + 1) : '─'
+    row[b] = '├'
+    for (let k = b + 1; k <= c; k++) row[k] = line
+  }))
+  return g.map(r => r.join(''))
+}
+
+// the library leaves rows that only stretch vertical lines: blank top and bottom rows in boxes, and
+// vertical arrows several rows long. Drop the box rows and shorten each arrow to one row of its line
+// style (so "┆" still shows an async call); every line stays joined because only full rows go.
+function dropEmptyRows(out) {
+  const chars = out.map(l => [...l])
+  const stretch = l => /^[\s│┆]*[│┆][\s│┆]*$/.test(l)
+  return out.filter((l, i) => {
+    if (i === 0 || i === out.length - 1 || !stretch(l)) return true
+    const joined = chars[i].every((ch, c) => ch === ' ' || (chars[i - 1][c] ?? ' ') !== ' ' && (chars[i + 1][c] ?? ' ') !== ' ')
+    const boxEdge = chars[i].some((ch, c) => ch === '│' && ('┌╭'.includes(chars[i - 1][c]) || '└╰'.includes(chars[i + 1][c])))
+    return !(joined && (boxEdge || l === out[i + 1]))
+  })
+}
+
 function renderText(src, ascii) {
   const opts = { colorMode: 'none', useAscii: ascii, paddingX: 3, paddingY: 3, boxBorderPadding: 0 }
   let out = renderMermaidASCII(src, opts).split('\n').map(l => l.replace(/\s+$/, ''))
@@ -91,6 +123,7 @@ function renderText(src, ascii) {
     // where two arrows merge into one box, the library draws the head one column right of the
     // line ("│▼"); put the head on the line so it points into the box, not past its edge
     out = out.map(l => l.replace(/[│┆]▼(?=\s|$)/g, '▼ ').replace(/\|v(?=\s|$)/g, 'v ').trimEnd())
+    if (!ascii) out = dropEmptyRows(joinStrayJunctions(out))
   }
   while (out.length && !out[0]) out.shift()
   while (out.length && !out.at(-1)) out.pop()
