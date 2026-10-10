@@ -1,9 +1,20 @@
 ---
 name: flow
-description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits) from Mermaid. Renders Unicode box art to paste inline in a chat reply (terminal and desktop app), checks a hand-drawn text diagram for misaligned lines (fd --lint), or a clean/sketch-style picture page. Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
+description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits). A chat diagram of about 12 boxes or fewer is drawn by hand and checked with fd --lint; a larger one, or one that also needs a picture page or walkthrough, is written in Mermaid and rendered as Unicode box art (fd) or a clean/sketch-style picture page (pic). Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
 ---
 
 # Flow and sequence diagrams
+
+## First: count the boxes
+
+| Diagram | Make it by |
+|---|---|
+| About 12 boxes or fewer, for chat only | **drawing it by hand**, then `fd --lint` ([By hand, then lint](#by-hand-then-lint)) |
+| Larger, or it also needs a picture page or a walkthrough | Mermaid, then `fd` or `pic` |
+
+Decide this before you write any Mermaid. A hand layout of a small diagram is shorter and clearer: 5 boxes drawn by hand fit in 11 rows, and the same 5 boxes from `fd` take 31.
+
+## Mermaid: one source, three outputs
 
 One Mermaid source, three outputs. The `diagrams:walkthrough` skill is the top layer and reads the same Mermaid.
 
