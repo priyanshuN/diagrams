@@ -1,9 +1,20 @@
 ---
 name: flow
-description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits) from Mermaid. Renders Unicode box art to paste inline in a chat reply (terminal and desktop app), checks a hand-drawn text diagram for misaligned lines (fd --lint), or a clean/sketch-style picture page. Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
+description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits). A chat diagram of about 12 boxes or fewer is drawn by hand and checked with fd --lint; a larger one, or one that also needs a picture page or walkthrough, is written in Mermaid and rendered as Unicode box art (fd) or a clean/sketch-style picture page (pic). Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
 ---
 
 # Flow and sequence diagrams
+
+## First: count the boxes
+
+| Diagram | Make it by |
+|---|---|
+| About 12 boxes or fewer, for chat only | **drawing it by hand**, then `fd --lint` ([By hand, then lint](#by-hand-then-lint)) |
+| Larger, or it also needs a picture page or a walkthrough | Mermaid, then `fd` or `pic` |
+
+Decide this before you write any Mermaid. A hand layout of a small diagram is shorter and clearer: 5 boxes drawn by hand fit in 11 rows, and the same 5 boxes from `fd` take 31.
+
+## Mermaid: one source, three outputs
 
 One Mermaid source, three outputs. The `diagrams:walkthrough` skill is the top layer and reads the same Mermaid.
 
@@ -17,7 +28,7 @@ Mermaid ─┬─► fd file.mmd ─────────► Unicode text in 
 
 | The reader asks | Draw | Mermaid header |
 |---|---|---|
-| What are the parts, and what flows between them? | flow | `graph TD` |
+| What are the parts, and what flows between them? | flow | `graph LR` (a chain) or `graph TD` (a tree) |
 | In what order do calls happen? Who waits for whom? When does the reply go back? | sequence | `sequenceDiagram` |
 | Both (a new system, an incident) | flow first, then the sequence of the one path that matters | both |
 
@@ -52,7 +63,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 
 - Paste stdout into a ```` ```text ```` fence. It is plain Unicode, so it reads the same in the terminal and in the desktop app. Never paste raw Mermaid into chat: neither surface renders it.
 - stderr reports the size (`fd: 43 cols x 37 rows`) and notes. Keep chat text within 90 columns and about 45 rows. If a note says it is too big, shorten labels, split the diagram, or make a picture instead.
-- Use `graph TD` for chat. `fd` switches a too-wide `LR` flow to `TD` by itself, because left-to-right text gets wide and misroutes arrows.
+- Use `graph LR` for a chain of calls: it reads left to right, like the request, and stays short. Use `graph TD` for a tree or a wide fan-out. `fd` switches an `LR` flow to `TD` by itself when it is wider than 90 columns or its lines fail the check.
 - In a sequence, write branches as a `Note over X: ...`. `alt`/`opt`/`loop` blocks render badly as text, and `fd` warns about them.
 - Chat text is single-colour by nature. Shapes carry meaning: `[( )]` store (rounded), `{ }` decision (◇), `-.->` async (dotted).
 - `fd file --ascii` gives plain + - | > for limited terminals. `fd file --json` prints the parsed diagram.
