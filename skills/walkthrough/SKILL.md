@@ -88,7 +88,7 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 ```
 
 The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `cues`, `kb` and `warnings`.
-- **Exit 2:** a scene error. **Exit 3:** Kokoro failed. A build never falls back to the macOS voice silently. Pass `--allow-fallback` (or `--say`) only if the user accepts the robotic voice.
+- **Exit 2:** a scene error. **Exit 3:** Kokoro failed. A build never falls back to the system voice silently. Pass `--allow-fallback` (or `--say`) only if the user accepts the robotic voice: macOS `say`, or `espeak-ng` on Linux when it is installed.
 - **Voices:** `af_heart` downloads with the model. Any other voice (`am_michael`, `bf_emma`, `bm_george`) downloads a small voice file on first use, which needs the network.
 
 ## 3. Verify in the browser pane, then hand over

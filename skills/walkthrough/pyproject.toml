@@ -4,5 +4,17 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "misaki[en]>=0.9.4",
-    "mlx-audio>=0.5.8",
+    # The voice is Kokoro-82M on both: MLX on Apple silicon, PyTorch (CPU) everywhere else.
+    "mlx-audio>=0.5.8; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "kokoro>=0.9.4; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "torch>=2.4; sys_platform != 'darwin' or platform_machine != 'arm64'",
 ]
+
+# CPU-only torch on Linux: the default wheels pull in several GB of CUDA libraries.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

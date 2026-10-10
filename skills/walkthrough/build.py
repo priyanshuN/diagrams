@@ -3,15 +3,16 @@
 
 The page holds an SVG flow diagram (desktop grid + phone column), one AAC audio track,
 captions, a clickable step list, word-timed cues inside steps, a recall quiz, optional
-"predict" pauses and source links. The voice is Kokoro-82M via mlx-audio; macOS `say`
-is used only with --allow-fallback.
+"predict" pauses and source links. The voice is Kokoro-82M: mlx-audio on Apple silicon,
+PyTorch (CPU) elsewhere. A system voice (macOS `say`, else espeak-ng) is used only with
+--allow-fallback.
 
 usage:
   uv run build.py scene.json [-o out.html] [--voice af_heart] [--speed 1.0]
   uv run build.py scene.json --check          # validate + layout + pronunciation preview, no audio
 Prints one JSON object on stdout; everything else goes to stderr.
 """
-import argparse, base64, contextlib, datetime, html, io, json, math, os, re, subprocess, sys, tempfile, wave
+import argparse, base64, contextlib, datetime, html, io, json, math, os, platform, re, shutil, subprocess, sys, tempfile, wave
 
 SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 # Layer 1 (the diagrams:flow skill, a sibling folder) draws every picture; this layer adds voice, cues and the quiz.
@@ -22,7 +23,10 @@ sys.path.insert(0, FLOW_DIR)
 import diagram as D  # noqa: E402
 SR = 24_000
 GAP_S = 0.45
-KOKORO = 'mlx-community/Kokoro-82M-bf16'
+KOKORO_MLX = 'mlx-community/Kokoro-82M-bf16'
+KOKORO_TORCH = 'hexgrad/Kokoro-82M'
+# Apple silicon runs Kokoro on MLX; every other machine runs the same model on PyTorch (CPU).
+USE_MLX = sys.platform == 'darwin' and platform.machine() == 'arm64'
 VOICE_RE = re.compile(r'^[abjzefhip][fm]_[a-z]+$')
 VERSION = 4
 
@@ -254,18 +258,28 @@ def git_sha(scene):
 
 # ---------------------------------------------------------------- voice
 
+def kokoro_pipeline(lang):
+    """Kokoro's pipeline for one language code. Both backends share its API: load_voice, g2p, and
+    calls that yield results with .audio and .tokens (word start_ts / end_ts)."""
+    with contextlib.redirect_stdout(sys.stderr):
+        if USE_MLX:
+            from mlx_audio.tts.utils import load_model
+            return load_model(model_path=KOKORO_MLX)._get_pipeline(lang)
+        from kokoro import KPipeline
+        return KPipeline(lang_code=lang, repo_id=KOKORO_TORCH)
+
+
 def kokoro_synth(lines, voice, speed):
     """-> list of (float32 audio, [(word, start_s, end_s)])"""
     import numpy as np
-    from mlx_audio.tts.utils import load_model
+    pipe = kokoro_pipeline(voice[0])
     with contextlib.redirect_stdout(sys.stderr):
-        model = load_model(model_path=KOKORO)
-        pipe = model._get_pipeline(voice[0])
         out = []
         for line in lines:
             chunks, words, offset = [], [], 0.0
             for r in pipe(line, voice=voice, speed=speed):
-                a = np.array(r.audio, dtype=np.float32).reshape(-1)
+                a = r.audio.detach().cpu().numpy() if hasattr(r.audio, 'detach') else r.audio  # torch tensor or MLX array
+                a = np.array(a, dtype=np.float32).reshape(-1)
                 for tk in r.tokens or []:
                     if tk.start_ts is not None and re.search(r'\w', tk.text):
                         words.append((tk.text, offset + tk.start_ts, offset + (tk.end_ts or tk.start_ts)))
@@ -274,17 +288,35 @@ def kokoro_synth(lines, voice, speed):
     return out
 
 
-def macos_say_synth(lines):
-    """Fallback voice. Word times are estimated from character position."""
+def fallback_voice():
+    """The system voice for --say / --allow-fallback: macOS `say`, else espeak-ng; None when neither exists."""
+    if shutil.which('say'):
+        return 'macos-say'
+    if shutil.which('espeak-ng'):
+        return 'espeak-ng'
+    return None
+
+
+def fallback_synth(lines):
+    """System voice. Word times are estimated from character position."""
     import numpy as np
+    engine = fallback_voice()
+    if engine is None:
+        raise RuntimeError('no system voice: install espeak-ng (Linux) or use macOS')
     out = []
     with tempfile.TemporaryDirectory() as td:
         for i, line in enumerate(lines):
             p = os.path.join(td, f'{i}.wav')
             plain = re.sub(r'\[([^\]]+)\]\(/[^)]*/\)', r'\1', line)
-            subprocess.run(['say', '-o', p, f'--data-format=LEI16@{SR}', plain], check=True)
+            if engine == 'macos-say':
+                subprocess.run(['say', '-o', p, f'--data-format=LEI16@{SR}', plain], check=True)
+            else:
+                subprocess.run(['espeak-ng', '-w', p, plain], check=True, capture_output=True)
             with wave.open(p) as w:
+                rate = w.getframerate()
                 a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+            if rate != SR:
+                a = np.interp(np.arange(int(len(a) * SR / rate)) * rate / SR, np.arange(len(a)), a).astype(np.float32)
             dur, words = len(a) / SR, []
             for m in re.finditer(r'\w[\w\'-]*', plain):
                 words.append((m.group(0), dur * m.start() / max(1, len(plain)), dur * m.end() / max(1, len(plain))))
@@ -302,11 +334,15 @@ def encode(audio):
     with tempfile.TemporaryDirectory() as td:
         src, dst = os.path.join(td, 'a.wav'), os.path.join(td, 'a.m4a')
         open(src, 'wb').write(wav)
-        try:
-            subprocess.run(['afconvert', '-f', 'm4af', '-d', 'aac', '-b', '64000', src, dst], check=True, capture_output=True)
-            return 'audio/mp4', open(dst, 'rb').read()
-        except (OSError, subprocess.CalledProcessError):
-            return 'audio/wav', wav
+        # AAC keeps the page about ten times smaller than WAV: afconvert on macOS, else ffmpeg.
+        for cmd in (['afconvert', '-f', 'm4af', '-d', 'aac', '-b', '64000', src, dst],
+                    ['ffmpeg', '-v', 'error', '-y', '-i', src, '-c:a', 'aac', '-b:a', '64k', '-f', 'mp4', dst]):
+            try:
+                subprocess.run(cmd, check=True, capture_output=True)
+                return 'audio/mp4', open(dst, 'rb').read()
+            except (OSError, subprocess.CalledProcessError):
+                continue
+        return 'audio/wav', wav
 
 
 def norm_word(s):
@@ -356,8 +392,8 @@ def main():
     ap.add_argument('--voice')
     ap.add_argument('--speed', type=float)
     ap.add_argument('--check', action='store_true', help='validate, check layout, preview pronunciation; no audio')
-    ap.add_argument('--say', action='store_true', help='use the macOS voice')
-    ap.add_argument('--allow-fallback', action='store_true', help='use the macOS voice if Kokoro fails')
+    ap.add_argument('--say', action='store_true', help='use the system voice (macOS say, else espeak-ng)')
+    ap.add_argument('--allow-fallback', action='store_true', help='use the system voice if Kokoro fails')
     args = ap.parse_args()
 
     try:
@@ -386,9 +422,7 @@ def main():
             warnings.append(f'step {i + 1}: spoken line has {len(line.split())} words; split the step (aim for under 40)')
 
     if args.check:
-        from mlx_audio.tts.utils import load_model
-        with contextlib.redirect_stdout(sys.stderr):
-            pipe = load_model(model_path=KOKORO)._get_pipeline(voice[0])
+        pipe = kokoro_pipeline(voice[0])
         errors = []
         try:
             with contextlib.redirect_stdout(sys.stderr):
@@ -409,18 +443,18 @@ def main():
         sys.exit(2 if errors else 0)
 
     import numpy as np
-    engine = 'macos-say'
+    engine = fallback_voice()
     if args.say:
-        synth = macos_say_synth(spoken)
+        synth = fallback_synth(spoken)
     else:
         try:
             synth, engine = kokoro_synth(spoken, voice, speed), f'kokoro:{voice}'
         except Exception as ex:
             if not args.allow_fallback:
-                log(f'Kokoro failed: {ex!r}\nRerun with --allow-fallback to use the macOS voice.')
+                log(f'Kokoro failed: {ex!r}\nRerun with --allow-fallback to use the system voice ({fallback_voice() or "none installed"}).')
                 print(json.dumps({'ok': False, 'error': f'kokoro failed: {ex}'})); sys.exit(3)
-            log(f'Kokoro failed ({ex!r}); using the macOS voice')
-            synth = macos_say_synth(spoken)
+            log(f'Kokoro failed ({ex!r}); using the system voice')
+            synth = fallback_synth(spoken)
 
     placed, errors = place_cues(scene, spoken, [w for _, w in synth], lex)
     if errors:

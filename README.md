@@ -21,16 +21,18 @@ To get pushes without running a command, turn on auto-update: `/plugin` → Mark
 
 ## Example
 
-`skills/flow/examples/` has one checkout, drawn both ways: `checkout.flow.mmd` (what talks to what) and `checkout.seq.mmd` (who calls whom, in order). Render the chat text with `skills/flow/fd <file>` and the picture with `python3 skills/flow/diagram.py <file> --look checkout.look.json -o out.html`.
+`skills/flow/examples/` has one checkout, drawn both ways: `checkout.flow.mmd` (what talks to what) and `checkout.seq.mmd` (who calls whom, in order). Render the chat text with `skills/flow/fd <file>` and the picture with `skills/flow/pic <file> --look checkout.look.json -o out.html`.
 
 ## Requirements
 
 | Skill | Needs | Linux |
 |---|---|---|
-| `flow` | Node 18+, Python 3.9+ | yes |
-| `walkthrough` | the above, plus `uv`; the voice is Kokoro via MLX (Apple silicon) and `afconvert` (macOS) | everything except the voice |
+| `flow` | Node 18+, `uv` (it fetches Python 3.12 by itself) | yes |
+| `walkthrough` | the above; `ffmpeg` on Linux for compact audio | yes |
 
-The walkthrough voice environment lives in `~/.local/share/narrated-walkthrough/venv`. The first build downloads the Kokoro model (about 340 MB).
+Both skills run on uv's Python 3.12, so no system Python upgrade is needed on either machine. Without `uv`, the flow picture tool falls back to `python3` (3.9+).
+
+The walkthrough voice is Kokoro-82M on every machine: MLX on Apple silicon, PyTorch (CPU-only wheels) on Linux and Intel Macs. Its environment lives in `~/.local/share/narrated-walkthrough/venv` (about 1.2 GB on Linux, mostly PyTorch). The first build downloads the Kokoro model (about 340 MB). Audio is AAC through `afconvert` on macOS or `ffmpeg` elsewhere; without either, the page holds WAV and is about ten times bigger.
 
 ## Developing
 
