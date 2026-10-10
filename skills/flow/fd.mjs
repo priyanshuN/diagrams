@@ -119,6 +119,15 @@ function renderText(src, ascii) {
     // compare the name rows only: the box borders differ (┬ above the lifelines, ┴ below)
     const last = out.map(l => l.trimEnd()).filter(Boolean)
     if (last.length > 8 && last[1] === last.at(-2)) out = out.slice(0, out.lastIndexOf(last.at(-3)))
+    if (!ascii) {
+      // an async message ("-)") gets a dotted line, as in flow diagrams, not only a hollow head
+      out = out.map(l => l.replace(/─+▷/g, m => '┄'.repeat(m.length - 1) + '▷').replace(/◁─+/g, m => '◁' + '┄'.repeat(m.length - 1)))
+      // drop the lifeline-only row between messages; keep it next to a note box (a message row
+      // right on a note's border breaks the lifeline) and as the lifelines' end
+      const noteEdge = (l, corner) => l?.includes(corner) && !/[┬┴]/.test(l)
+      out = out.filter((l, i) => i === out.length - 1 || !/^[\s│]*│[\s│]*$/.test(l) ||
+        noteEdge(out[i + 1], '┌') || noteEdge(out[i - 1], '└'))
+    }
   } else {
     // where two arrows merge into one box, the library draws the head one column right of the
     // line ("│▼"); put the head on the line so it points into the box, not past its edge
