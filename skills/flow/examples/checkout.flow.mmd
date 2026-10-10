@@ -1,0 +1,14 @@
+graph TD
+  customer[Customer<br/>web browser]
+  shop[Shop API<br/>order service]
+  subgraph provider [Payment provider]
+    pay[Payment API<br/>charges cards]
+  end
+  decide{Paid?}
+  orders[(Orders DB<br/>paid orders)]
+  support[Support queue<br/>a person follows up]
+  customer -->|place order| shop
+  shop -->|charge card| pay
+  pay -.->|webhook| decide
+  decide -->|yes| orders
+  decide -->|no| support

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Wrapper so the skill runs from any directory. Needs Node and `npm ci` in this folder.
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node "$here/fd.mjs" "$@"

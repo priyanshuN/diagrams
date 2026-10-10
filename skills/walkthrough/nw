@@ -1,0 +1,4 @@
+#!/bin/bash
+# Wrapper: run build.py in the shared venv. Usage: nw scene.json [--check] [-o out.html] [...]
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UV_PROJECT_ENVIRONMENT="$HOME/.local/share/narrated-walkthrough/venv" exec uv run -q --frozen --project "$here" "$here/build.py" "$@"

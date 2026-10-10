@@ -1,0 +1,253 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>__TITLE__</title>
+<style>
+__DIAGRAMCSS__
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:1040px;margin:0 auto;padding:28px 16px 48px}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* header: title + quiet tools */
+header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:0}
+.lead{color:var(--mut);margin:4px 0 0;max-width:64ch}
+.lead span{color:var(--faint);white-space:nowrap}
+.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tool{border:1px solid var(--line);background:var(--surf);border-radius:8px;padding:6px 12px;font-size:13.5px;cursor:pointer}
+.tool:hover{border-color:var(--mut)}.tool.on{background:var(--wash);border-color:var(--acc);color:var(--ink)}
+.toggle{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--surf);border-radius:8px;padding:6px 12px;font-size:13.5px;line-height:1.5;color:var(--mut);cursor:pointer;user-select:none}
+.toggle:hover{border-color:var(--mut)}
+.toggle:has(input:checked){color:var(--ink)}
+.toggle input{appearance:none;-webkit-appearance:none;margin:0;flex:none;width:28px;height:16px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surf);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
+.toggle input:checked{background:var(--acc)}.toggle input:checked::after{transform:translateX(12px)}
+.toggle input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* stage = diagram + docked player bar */
+.stage{background:var(--surf);border:1px solid var(--line);border-radius:14px;position:relative;--w:max(100%,min(var(--sw,100%),calc(100vw - 32px)));width:var(--w);margin-left:calc((100% - var(--w)) / 2);box-sizing:border-box}
+.canvas{padding:14px 16px 10px}
+/* the travelling item: a pill that rides the lit arrow */
+.tok rect{fill:var(--c,var(--acc));rx:9}.tok text{fill:var(--onacc);font-size:11px;font-weight:650;text-anchor:middle;dominant-baseline:central}
+.tok{pointer-events:none;transition:opacity .25s}.tok.off{opacity:0}
+
+.player{display:flex;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--bar);border-radius:0 0 13px 13px}
+.ibtn{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:var(--mut);cursor:pointer;flex:none}
+.ibtn:hover{background:var(--done);color:var(--ink)}.ibtn svg{width:16px;height:16px;fill:currentColor}
+.ibtn.main{width:40px;height:40px;background:var(--acc);color:var(--onacc)}.ibtn.main:hover{background:var(--acc);filter:brightness(1.08)}
+.ibtn.main svg{width:18px;height:18px}
+.prog{flex:1;height:22px;position:relative;cursor:pointer;min-width:60px}
+.prog::before{content:"";position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:var(--line)}
+.prog i{position:absolute;left:0;top:9px;height:4px;border-radius:2px;background:var(--acc)}
+.prog b{position:absolute;top:7px;width:2px;height:8px;margin-left:-1px;background:var(--surf);border-radius:1px}
+.t{color:var(--mut);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+.rate{border:1px solid var(--line);background:var(--surf);border-radius:8px;padding:4px 6px;font-size:13px;cursor:pointer}
+
+/* now playing */
+.now{margin:22px 4px 0;display:grid;grid-template-columns:minmax(0,62ch) minmax(220px,300px);gap:28px;align-items:start;justify-content:space-between}
+.now.noitem{grid-template-columns:minmax(0,66ch)}
+.item{border:1px solid color-mix(in srgb,var(--c,var(--line)) 50%,var(--line));border-radius:12px;background:var(--surf);overflow:hidden}
+.item header{all:unset;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cw,var(--done));font-size:13px;font-weight:650;color:var(--ink)}
+.item header i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--acc))}
+.item header small{margin-left:auto;font-weight:500;color:var(--mut)}
+.item dl{margin:0;padding:8px 12px 10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.item dt{color:var(--faint)}.item dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.item.flash{animation:flash .5s ease-out}@keyframes flash{from{box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--acc)) 45%,transparent)}to{box-shadow:none}}
+@media (max-width:760px){.now{grid-template-columns:1fr}}
+.stepno{color:var(--faint);font-size:13px;font-variant-numeric:tabular-nums}
+.cap{font-size:19px;line-height:1.5;margin:4px 0 0;min-height:3em;text-wrap:pretty}
+.src{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12.5px;color:var(--faint)}
+.src code{font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);background:var(--done);border-radius:6px;padding:5px 7px}
+
+/* transcript */
+.transcript{margin:26px 0 0;padding:0;list-style:none;max-width:72ch;border-top:1px solid var(--line)}
+.transcript li{border-bottom:1px solid var(--line)}
+.transcript button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1.8em 1fr auto;gap:8px;align-items:baseline;width:100%;padding:9px 6px;cursor:pointer;color:var(--mut);font-size:14.5px}
+.transcript .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.transcript .n{color:var(--faint);font-variant-numeric:tabular-nums;font-size:13px}
+.transcript button:hover{color:var(--ink)}
+.transcript li.on button{color:var(--ink);box-shadow:inset 3px 0 var(--acc);padding-left:12px}
+.transcript li.on .txt{white-space:normal}
+.transcript li.past .n{color:var(--acc)}
+.ask{font-size:12px;color:var(--acc);border:1px solid currentColor;border-radius:999px;padding:0 7px;line-height:18px;white-space:nowrap}
+.quizzing .transcript{opacity:.35;pointer-events:none}.quizzing .now{display:none}@media (prefers-reduced-motion:reduce){.item.flash{animation:none}}
+
+/* predict + quiz card: directly under the player, never over the diagram */
+.card{margin:14px 0 0;max-width:66ch;background:var(--surf);border:1.5px solid var(--acc);border-radius:12px;padding:14px 16px}
+.card[hidden]{display:none}
+.card h2{font-size:14px;font-weight:650;margin:0 0 4px;color:var(--acc)}
+.card p{margin:0 0 12px}.card .ans{font-weight:600}
+.card .row{display:flex;gap:8px}
+.card button{border:1px solid var(--line);background:var(--surf);border-radius:8px;padding:6px 14px;cursor:pointer}
+.card button.primary{background:var(--acc);border-color:var(--acc);color:var(--onacc);font-weight:600}
+.quiz .lbl,.quiz .sub{opacity:0}.quiz .node{cursor:pointer}.quiz .node:hover rect{stroke:var(--acc)}
+.quiz .node.right .shape{fill:var(--wash);stroke:var(--acc);stroke-width:2.5}.quiz .node.right text{opacity:1}
+.quiz .node.wrong .shape{fill:var(--badwash);stroke:var(--bad);stroke-width:2.5}.quiz .tok{display:none}
+.sketch .quiz .node:hover .sko{stroke:var(--acc)}.sketch .quiz .node.right .shape,.sketch .quiz .node.wrong .shape{fill:transparent;stroke:transparent}
+.sketch .quiz .node.right .skh{stroke:color-mix(in srgb,var(--acc) 60%,var(--paper))}.sketch .quiz .node.right .sko{stroke:var(--acc);stroke-width:2.6}
+.sketch .quiz .node.wrong .skh{stroke:color-mix(in srgb,var(--bad) 55%,var(--paper))}.sketch .quiz .node.wrong .sko{stroke:var(--bad);stroke-width:2.6}
+.sketch h1{font:400 26px/1.2 Hand,"Bradley Hand",cursive;letter-spacing:0}
+
+footer{margin-top:22px;color:var(--faint);font-size:12.5px}
+@media (max-width:640px){main{padding-top:18px}h1{font-size:19px}.cap{font-size:17px}.player{gap:4px;padding:8px 10px;position:sticky;bottom:0;z-index:2;box-shadow:0 -6px 16px rgba(0,0,0,.12)}.rate{display:none}}
+@media (max-width:640px){.transcript .txt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.transcript li.on .txt{display:block}}
+@media (prefers-reduced-motion:reduce){.edge.on{animation:none;stroke-dasharray:none}.node rect,.node text,.edge{transition:none}}
+</style></head><body class="__THEME__"><main>
+<header>
+ <div><h1>__TITLE__</h1><p class="lead" id="lead">__LEAD__</p></div>
+ <div class="tools"><label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch" checked>Pause to predict</label>
+  <button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button></div>
+</header>
+<div class="stage" id="stage" style="--sw:__STAGEW__px">
+ <div class="canvas">__SVGDESK____SVGPHONE__<div class="legend" id="legend"></div></div>
+ <div class="player">
+  <button class="ibtn main" id="play" aria-label="Play"></button>
+  <button class="ibtn" id="prev" aria-label="Previous step"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+  <button class="ibtn" id="next" aria-label="Next step"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
+  <div class="prog" id="prog" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuenow="0"><i id="fill"></i></div>
+  <span class="t" id="t">0:00</span>
+  <select class="rate" id="rate" aria-label="Speed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
+ </div>
+</div>
+<div class="card" id="card" hidden role="dialog" aria-live="polite"><h2 id="cardh"></h2><p id="cardq"></p><p class="ans" id="carda" hidden></p><div class="row" id="cardb"></div></div>
+<section class="now noitem" id="now"><div aria-live="polite"><div class="stepno" id="stepno"></div><p class="cap" id="cap"></p><div class="src" id="src"></div></div>
+ <aside class="item" id="item" hidden aria-label="What the item looks like now"><header><i></i><span id="iname"></span><small id="iwhere"></small></header><dl id="ifields"></dl></aside></section>
+<ol class="transcript" id="steps"></ol>
+<footer id="foot"></footer>
+<audio id="a" preload="auto" src="data:__MIME__;base64,__AUDIO__"></audio>
+</main><script>
+const D=__DATA__,S=D.steps,M=D.meta,$=id=>document.getElementById(id),a=$('a');
+const nodes=[...document.querySelectorAll('.node')],edges=[...document.querySelectorAll('.edge')],elbls=[...document.querySelectorAll('.elbl')];
+const store={get(k){try{return localStorage.getItem('nw:'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('nw:'+k,v)}catch(e){}}};
+const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',pause:'<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>'};
+const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+const dur=()=>a.duration||M.seconds;
+// ---- header meta + transcript rows
+const meta=document.createElement('span');meta.textContent=` ${S.length} steps, ${fmt(M.seconds)}`;$('lead').append(meta);
+S.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button');
+ b.innerHTML=`<span class="n">${i+1}</span><span class="txt"></span>${s.ask?'<span class="ask" title="Pauses here so you can predict">predict</span>':'<span></span>'}`;
+ b.querySelector('.txt').textContent=s.caption;b.onclick=()=>go(i,true);li.appendChild(b);$('steps').appendChild(li)});
+// ---- legend: what the colours mean
+(D.legend||[]).forEach(l=>{const s=document.createElement('span');s.className='c-'+l.color;s.innerHTML='<i></i>';s.append(l.label);$('legend').appendChild(s)});
+if(!(D.legend||[]).length)$('legend').hidden=true;
+// ---- item card: the latest "item" at or before this moment, coloured by where it is
+const nodeLabel=Object.fromEntries(nodes.map(n=>[n.dataset.n,n.querySelector('.lbl').textContent]));
+function itemAt(i,c){let it=null;for(let j=0;j<=i;j++){if(S[j].item)it=S[j].item;const last=j<i?S[j].cues.length-1:c;for(let k=0;k<=last;k++)if(S[j].cues[k]&&S[j].cues[k].item)it=S[j].cues[k].item}return it}
+const anyItem=S.some(s=>s.item||s.cues.some(q=>q.item));if(anyItem){$('item').hidden=false;$('now').classList.remove('noitem')}
+let shownItem=null;
+function showItem(i,c){if(!anyItem)return;const it=itemAt(i,c),where=lit(i,c).focus[0];const card=$('item');
+ card.className='item c-'+((where&&D.colors[where])||'emerald');$('iwhere').textContent=where?'at '+nodeLabel[where]:'';
+ if(it===shownItem)return;shownItem=it;$('iname').textContent=it?it.name:'Nothing yet';
+ $('ifields').replaceChildren(...Object.entries((it&&it.fields)||{}).flatMap(([k,v])=>[Object.assign(document.createElement('dt'),{textContent:k}),Object.assign(document.createElement('dd'),{textContent:String(v)})]));
+ card.classList.remove('flash');void card.offsetWidth;card.classList.add('flash')}
+// ---- tokens: a labelled pill rides each lit arrow for ~1.4 s after its step or cue starts
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,TRAVEL=1.4,NS='http://www.w3.org/2000/svg';
+const pools=new Map(svgs0().map(s=>[s,[]]));function svgs0(){return[...document.querySelectorAll('svg.dia')]}
+function tokenFor(svg,k){const pool=pools.get(svg);while(pool.length<=k){const g=document.createElementNS(NS,'g'),r=document.createElementNS(NS,'rect'),tx=document.createElementNS(NS,'text');
+ r.setAttribute('height',18);r.setAttribute('y',-9);g.append(r,tx);g.setAttribute('class','tok off');svg.appendChild(g);pool.push(g)}return pool[k]}
+function drawTokens(){const t=a.currentTime,[i,c]=stateAt(t),s=S[i],start=c>=0?s.cues[c].t:s.t,ids=lit(i,c).edges;
+ const it=itemAt(i,c),label=(c>=0&&s.cues[c].carry)||(c<0&&s.carry)||(it&&it.name)||'';
+ let prog=(t-start)/TRAVEL;if(RM)prog=0.5;
+ pools.forEach((pool,svg)=>{let k=0;if(getComputedStyle(svg).display!=='none'&&!quizOn&&label&&prog<1.12){
+  ids.forEach(id=>{const e=svg.querySelector(`.edge[data-e="${CSS.escape(id)}"]`);if(!e)return;const g=tokenFor(svg,k++),L=e.getTotalLength(),p=e.getPointAtLength(L*Math.min(Math.max(prog,0),1));
+   const col=[...e.classList].find(x=>x.startsWith('c-'))||'c-emerald';g.setAttribute('class','tok '+col);
+   const tx=g.querySelector('text'),r=g.querySelector('rect');if(tx.textContent!==label){tx.textContent=label;const w=tx.getComputedTextLength()+16;r.setAttribute('width',w);r.setAttribute('x',-w/2)}
+   g.setAttribute('transform',`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`)})}
+  pool.slice(k).forEach(g=>g.classList.add('off'))})}
+// ---- diagram state: a step's base lighting, replaced by each cue as its word is spoken
+function stateAt(t){let i=0;S.forEach((s,j)=>{if(t>=s.t-0.01)i=j});const s=S[i];let c=-1;s.cues.forEach((q,k)=>{if(t>=q.t-0.01)c=k});return[i,c]}
+function lit(i,c){const s=S[i];return c<0?{focus:s.focus,edges:s.edges}:s.cues[c]}
+let cur=[-1,-1];
+function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==i;cur=[i,c];
+ const now=lit(i,c),seenN=new Set(),seenE=new Set();
+ const add=x=>{x.focus.forEach(n=>seenN.add(n));x.edges.forEach(e=>seenE.add(e))};
+ for(let j=0;j<i;j++){add(S[j]);S[j].cues.forEach(add)}if(c>=0){add(S[i]);S[i].cues.slice(0,c).forEach(add)}
+ nodes.forEach(n=>{const id=n.dataset.n;n.classList.toggle('on',now.focus.includes(id));n.classList.toggle('done',seenN.has(id)&&!now.focus.includes(id))});
+ edges.forEach(e=>{const id=e.dataset.e;e.classList.toggle('on',now.edges.includes(id));e.classList.toggle('done',seenE.has(id))});
+ elbls.forEach(e=>e.classList.toggle('on',now.edges.includes(e.dataset.e)));
+ showItem(i,c);follow();
+ if(stepChanged){$('stepno').textContent=`Step ${i+1} of ${S.length}`;$('cap').textContent=S[i].caption;
+  $('src').replaceChildren(...(S[i].src.length?[Object.assign(document.createElement('span'),{textContent:'Code'}),...S[i].src.map(p=>Object.assign(document.createElement('code'),{textContent:p}))]:[]));
+  [...$('steps').children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('past',j<i)});
+  try{history.replaceState(null,'','#'+(i+1))}catch(e){}}}
+function go(i,play){if(quizOn)return;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
+// ---- predict pauses: pause when playback reaches a step that has "ask"
+const asked=new Set();let skipAsk=-1;
+function tick(){if(quizOn)return;const [i,c]=stateAt(a.currentTime);
+ if(!a.paused&&$('predict').checked&&S[i].ask&&!asked.has(i)&&i!==skipAsk&&a.currentTime-S[i].t<0.6){asked.add(i);a.pause();a.currentTime=S[i].t;askCard(i);}
+ paint(i,c);drawTokens();$('fill').style.width=(100*a.currentTime/dur())+'%';$('prog').setAttribute('aria-valuenow',Math.round(a.currentTime));
+ $('t').textContent=fmt(a.currentTime)+' / '+fmt(dur())}
+function loop(){tick();if(!a.paused)requestAnimationFrame(loop)}
+function setPlayIcon(){const p=a.paused;$('play').innerHTML=p?ICON.play:ICON.pause;$('play').setAttribute('aria-label',p?'Play':'Pause')}
+a.onplay=()=>{setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
+a.onloadedmetadata=()=>{$('prog').setAttribute('aria-valuemax',Math.round(a.duration));S.slice(1).forEach(s=>{const b=document.createElement('b');b.style.left=(100*s.t/a.duration)+'%';$('prog').appendChild(b)});tick()};
+$('play').addEventListener('click',e=>{if(quizOn){e.stopImmediatePropagation()}},true);
+$('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>go(cur[0]-1,!a.paused);$('next').onclick=()=>go(cur[0]+1,!a.paused);
+$('prog').onclick=e=>{skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
+$('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
+const r0=store.get('rate');if(r0){$('rate').value=r0;a.playbackRate=+r0}$('rate').onchange=e=>{a.playbackRate=+e.target.value;store.set('rate',e.target.value)};
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,select'))return;
+ if(quizOn){if(e.key==='Escape')endQuiz();else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.n){e.preventDefault();answer(e.target.dataset.n)}return}
+ if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')go(cur[0]-1,!a.paused);
+ else if(/^[1-9]$/.test(e.key))go(+e.key-1,!a.paused)});
+// ---- card (predict + quiz)
+function card(h,q,ans,buttons){$('cardh').textContent=h;$('cardq').textContent=q;$('carda').textContent=ans||'';$('carda').hidden=true;$('cardb').innerHTML='';
+ buttons.forEach(([t,f,primary])=>{const b=document.createElement('button');b.textContent=t;if(primary)b.className='primary';b.onclick=f;$('cardb').appendChild(b)});$('card').hidden=false;$('cardb').firstChild&&$('cardb').firstChild.focus({preventScroll:true})}
+function hideCard(){$('card').hidden=true}
+function askCard(i){card('Predict, then check',S[i].ask.q,S[i].ask.a,[['Show answer',()=>{$('carda').hidden=false;$('cardb').firstChild.remove();$('cardb').firstChild.className='primary';$('cardb').firstChild.focus({preventScroll:true})},true],['Continue',()=>{hideCard();a.play()}]])}
+// ---- recall quiz: labels hidden, click where each step happens
+let quizOn=false,qi=0,score=0,qsteps=[];const svgs=[...document.querySelectorAll('svg.dia')];
+const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),maskWords=[...D.labels,...D.labels.flatMap(l=>l.split(/\s+/)).filter(w=>w.length>=2&&/^[A-Z0-9]/.test(w))];
+const mask=t=>maskWords.reduce((s,w)=>s.replace(new RegExp('(^|[^\\w▢])'+esc(w)+'(?![\\w])','gi'),'$1▢▢▢'),t);
+function startQuiz(){a.pause();quizOn=true;document.body.classList.add('quizzing');$('quiz').classList.add('on');
+ nodes.forEach(n=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.setAttribute('aria-label','Diagram box')});qi=0;score=0;qsteps=S.map((s,i)=>i).filter(i=>S[i].focus.length);svgs.forEach(s=>s.classList.add('quiz'));
+ nodes.forEach(n=>n.classList.remove('on','done'));edges.forEach(e=>e.classList.remove('on','done'));$('quiz').textContent='End test';askQ()}
+let answered=false;
+function askQ(){answered=false;nodes.forEach(n=>n.classList.remove('right','wrong'));if(qi>=qsteps.length)return quizDone();const i=qsteps[qi];
+ card(`Where does this happen? ${qi+1} of ${qsteps.length}`,mask(S[i].caption),'',[['Skip',()=>{qi++;askQ()}],['End test',endQuiz]])}
+function answer(id){const i=qsteps[qi];if(!quizOn||answered||i===undefined)return;answered=true;const ok=S[i].focus.includes(id);if(ok)score++;
+ nodes.forEach(n=>{if(S[i].focus.includes(n.dataset.n))n.classList.add('right');else if(n.dataset.n===id)n.classList.add('wrong')});
+ card(ok?'Right':'Not quite',S[i].caption,'',[['Next',()=>{qi++;askQ()},true]])}
+function quizDone(){const best=Math.max(score,+(store.get('best:'+D.title)||0));store.set('best:'+D.title,best);
+ card('Done',`You placed ${score} of ${qsteps.length} steps. Your best: ${best} of ${qsteps.length}.`,'',[['Try again',startQuiz,true],['Close',endQuiz]])}
+function endQuiz(){quizOn=false;document.body.classList.remove('quizzing');$('quiz').classList.remove('on');nodes.forEach(n=>{n.removeAttribute('tabindex');n.removeAttribute('role');n.removeAttribute('aria-label')});svgs.forEach(s=>s.classList.remove('quiz'));nodes.forEach(n=>n.classList.remove('right','wrong'));hideCard();$('quiz').textContent='Test me';cur=[-1,-1];paint(...stateAt(a.currentTime))}
+nodes.forEach(n=>n.addEventListener('click',()=>quizOn&&answer(n.dataset.n)));
+$('quiz').onclick=()=>quizOn?endQuiz():startQuiz();
+if(!S.some(s=>s.ask))$('predictWrap').hidden=true;
+const pv=store.get('predict');if(pv!==null)$('predict').checked=pv==='1';$('predict').onchange=e=>store.set('predict',e.target.checked?'1':'0');
+// ---- notes export
+$('notes').onclick=async()=>{const md=[`# ${D.title}`,D.lead?`\n${D.lead}\n`:'',...S.map((s,i)=>`${i+1}. ${s.caption}${s.src.length?`  \n   Code: \`${s.src.join('`, `')}\``:''}${s.ask?`  \n   - Q: ${s.ask.q}  \n   - A: ${s.ask.a}`:''}`),
+ M.sha?`\nBuilt from ${M.repo}@${M.sha} on ${M.built}.`:''].join('\n');
+ try{await navigator.clipboard.writeText(md)}catch(e){const t=document.createElement('textarea');t.value=md;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+ $('notes').textContent='Copied';setTimeout(()=>$('notes').textContent='Copy as notes',1500)};
+$('foot').textContent=M.sha?`Built from ${M.repo} at ${M.sha} on ${M.built}.`:`Built on ${M.built}.`;
+// ---- self-test for the agent: window.__nw.selftest()
+// a sequence on a phone scrolls sideways: keep the lit message (or box) in view
+function follow(instant){const svg=visibleSvg();if(!svg||!svg.classList.contains('seq'))return;const box=svg.parentElement;if(box.scrollWidth<=box.clientWidth)return;
+ const el=svg.querySelector('.edge.on')||svg.querySelector('.node.on');if(!el)return;const r=el.getBoundingClientRect(),b=box.getBoundingClientRect();
+ box.scrollTo({left:box.scrollLeft+r.left+r.width/2-b.left-b.width/2,behavior:instant||matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})}
+// the first paint runs before the hand font and layout settle: follow again once they have
+addEventListener('load',()=>(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>follow(true)));
+function visibleSvg(){return svgs.find(s=>getComputedStyle(s).display!=='none')}
+const overlap=(b,c)=>b.x<c.x+c.width-1&&c.x<b.x+b.width-1&&b.y<c.y+c.height-1&&c.y<b.y+b.height-1;
+window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const out={ok:true,problems:[],duration:a.duration,steps:[]};
+ if(a.duration&&Math.abs(a.duration-M.seconds)>0.5)out.problems.push(`audio ${a.duration}s vs built ${M.seconds}s`);
+ const svg=visibleSvg(),nd=[...svg.querySelectorAll('.node')];
+ S.forEach((s,i)=>{paint(i,-1);const st={step:i+1,lit:nd.filter(n=>n.classList.contains('on')).map(n=>n.dataset.n),cues:[]};
+  if(s.focus.length&&!st.lit.length)out.problems.push(`step ${i+1} lights nothing`);
+  s.cues.forEach((q,k)=>{paint(i,k);st.cues.push(nd.filter(n=>n.classList.contains('on')).map(n=>n.dataset.n))});out.steps.push(st)});
+ const boxes=nd.map(n=>({id:n.dataset.n,b:n.querySelector('.shape').getBBox()}));
+ svg.querySelectorAll('.edge').forEach(e=>{const [f,t]=e.dataset.e.split('>'),L=e.getTotalLength();
+  for(let k=1;k<30;k++){const p=e.getPointAtLength(L*k/30);const hit=boxes.find(x=>x.id!==f&&x.id!==t&&p.x>x.b.x+2&&p.x<x.b.x+x.b.width-2&&p.y>x.b.y+2&&p.y<x.b.y+x.b.height-2);
+   if(hit){out.problems.push(`edge ${e.dataset.e} crosses ${hit.id}`);break}}});
+ nd.forEach(n=>{const w=n.querySelector('.shape').getBBox().width;n.querySelectorAll('text').forEach(t=>{if(t.getComputedTextLength()>w-8)out.problems.push(`text "${t.textContent}" overflows ${n.dataset.n}`)})});
+ const tl=[...svg.querySelectorAll('.glbl,.elbl')].filter(t=>getComputedStyle(t).opacity!=='0').map(t=>({t:t.textContent,b:t.getBBox()}));
+ tl.forEach((p,i)=>tl.slice(i+1).forEach(q=>{if(overlap(p.b,q.b))out.problems.push(`labels "${p.t}" and "${q.t}" overlap`)}));
+ tl.forEach(p=>boxes.forEach(x=>{if(overlap(p.b,x.b))out.problems.push(`label "${p.t}" overlaps box ${x.id}`)}));
+ const fs=parseFloat(getComputedStyle(svg.querySelector('.lbl')).fontSize)*svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
+ if(fs<10)out.problems.push(`labels render at ${fs.toFixed(1)}px`);out.labelPx=+fs.toFixed(1);
+ cur=[-1,-1];paint(...stateAt(a.currentTime));out.ok=!out.problems.length;return out}};
+// ---- start at #n
+const h=parseInt(location.hash.slice(1)),h0=h>=1&&h<=S.length?h-1:0;paint(...stateAt(S[h0].t));
+if(a.readyState>=1)go(h0,false);else a.addEventListener('loadedmetadata',()=>go(h0,false),{once:true});
+</script></body></html>

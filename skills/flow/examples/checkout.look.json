@@ -1,0 +1,17 @@
+{
+  "customer": {"kind": "external", "color": "slate", "at": [0, 0]},
+  "shop": {"at": [0, 1]},
+  "pay": {"at": [1, 1]},
+  "provider": {"color": "sky"},
+  "decide": {"at": [0, 2]},
+  "orders": {"at": [0, 3]},
+  "support": {"color": "amber", "at": [1, 2]},
+  "decide>orders": {"tone": "good"},
+  "decide>support": {"tone": "warn"},
+  "legend": [
+    {"color": "slate", "label": "Outside your system"},
+    {"color": "sky", "label": "Payment provider"},
+    {"color": "emerald", "label": "Your app"},
+    {"color": "amber", "label": "Waits for a person"}
+  ]
+}

@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant C as Customer
+  participant Shop as Shop API
+  participant Pay as Payment API
+  participant DB as Orders DB
+  C->>Shop: place order
+  Shop->>DB: save pending order
+  Shop->>Pay: charge card
+  Pay-->>Shop: charge id
+  Shop-->>C: processing
+  Pay-)Shop: webhook: paid
+  Note over Shop: verify the signature
+  Shop->>DB: mark order paid
+  Shop-)C: receipt email
