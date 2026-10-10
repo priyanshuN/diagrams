@@ -17,7 +17,7 @@ Mermaid ─┬─► diagrams:flow ─────────► Unicode text i
 
 Claude Code installs the Node libraries from `package.json` by itself.
 
-To get pushes without running a command, turn on auto-update: `/plugin` → Marketplaces → diagrams → Enable auto-update. To update by hand, run `claude plugin update diagrams@diagrams` and then `/reload-plugins`.
+To get new releases without running a command, turn on auto-update: `/plugin` → Marketplaces → diagrams → Enable auto-update. To update by hand, run `claude plugin update diagrams@diagrams` and then `/reload-plugins`.
 
 ## Example
 
@@ -51,7 +51,16 @@ The pages the skills write are single, self-contained HTML files: fonts and scri
 
 ## Developing
 
-Edit here, test with the scripts in place (`skills/flow/fd`, `skills/walkthrough/nw`), then push. Validate with `claude plugin validate .`. There is no `version` field on purpose, so every pushed commit reaches every machine.
+Edit here, test with the scripts in place (`skills/flow/fd`, `skills/walkthrough/nw`), then push. Validate with `claude plugin validate .`.
+
+### Releases
+
+Installed copies update only when `version` in `.claude-plugin/plugin.json` goes up. A push without a version bump reaches nobody, so work in progress stays on the branch.
+
+1. Raise `version`: the third number for a fix (0.1.0 → 0.1.1), the second for a new feature (0.1.1 → 0.2.0).
+2. Add a line for the version at the top of `CHANGELOG.md`.
+3. Commit, push, and tag the commit `vX.Y.Z`.
+4. On each machine: `claude plugin marketplace update diagrams`, then `claude plugin update diagrams@diagrams`, then restart Claude Code. With auto-update on, Claude Code does this at start-up.
 
 ## Licence
 
