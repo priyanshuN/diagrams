@@ -9,7 +9,7 @@ One Mermaid source, three outputs. The `diagrams:walkthrough` skill is the top l
 
 ```
 Mermaid ─┬─► fd file.mmd ─────────► Unicode text in a ```text fence (chat)
-         ├─► diagram.py file.mmd ─► picture page: sketch (default) or clean
+         ├─► pic file.mmd ────────► picture page: sketch (default) or clean
          └─► walkthrough skill ──► picture + voice, cues, quiz
 ```
 
@@ -68,7 +68,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 ## 2. Picture page (clean or sketch)
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/diagram.py" diagram.mmd --look look.json --title "Checkout" -o out.html
+"${CLAUDE_SKILL_DIR}/pic" diagram.mmd --look look.json --title "Checkout" -o out.html
 ```
 
 - **Sketch is the default**: hand-drawn boxes and arrows (rough.js) on graph paper, with the Architects Daughter font. `--theme clean` gives crisp lines for dense or precise diagrams.
@@ -102,6 +102,6 @@ python3 "${CLAUDE_SKILL_DIR}/diagram.py" diagram.mmd --look look.json --title "C
 
 ## Setup and limits
 
-- Needs Node 18+ and Python 3.9+. Libraries come from the plugin's `package.json`; Claude Code installs them on plugin install and update. In a loose copy, run `npm ci` where `package.json` is: beautiful-mermaid (MIT) for text and parsing, libavoid-js (LGPL) for arrows, roughjs (MIT) for the sketch, and @fontsource/architects-daughter (OFL). All run at build time; nothing loads from a CDN.
+- Needs Node 18+ and `uv`: `pic` runs `diagram.py` on uv's Python 3.12 (plain `python3` 3.9+ without uv). Libraries come from the plugin's `package.json`; Claude Code installs them on plugin install and update. In a loose copy, run `npm ci` where `package.json` is: beautiful-mermaid (MIT) for text and parsing, libavoid-js (LGPL) for arrows, roughjs (MIT) for the sketch, and @fontsource/architects-daughter (OFL). All run at build time; nothing loads from a CDN.
 - If roughjs or libavoid is missing, the picture falls back (clean theme, simple curves) with a warning.
 - The examples are in `examples/`: `checkout.flow.mmd` (+ `checkout.look.json`), `checkout.seq.mmd`, and `shop.hand.txt` (a hand-drawn diagram that passes `--lint`).
