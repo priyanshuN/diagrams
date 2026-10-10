@@ -35,11 +35,12 @@ svg.dia{width:100%;height:auto;display:block;margin:0 auto}svg.phone{display:non
 .ntxt{font-size:12.5px;fill:var(--ink);text-anchor:middle}
 
 /* sketch theme: hand-drawn strokes on graph paper. The clean shapes stay (invisible) for scripts. */
-.sketch{--paper:#faf6ec;--gridline:#f0ebdf;--skink:#12110f;--h-idle:16%;--h-done:26%;--h-on:46%;--wash-on:13%;
+/* The hand font is thin, so box labels get a hairline ink outline that thickens each letter (labels that sit on lines keep a paper outline instead, so a line never runs through them); synthetic bold does not render in SVG text. */
+.sketch{--paper:#faf6ec;--gridline:#f0ebdf;--skink:#0b0a08;--h-idle:10%;--h-done:17%;--h-on:32%;--wash-on:10%;
  /* the page around the paper takes the same warm family, so cream paper never sits in a cool grey frame */
  --bg:#f2eee3;--surf:#fbf8f1;--line:#ddd5c4;--grp:#f5f1e6;--bar:#f6f2e8;--done:#efe9db;--faint:#8c8576;--mut:#5f594c}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .sketch{--paper:#1b211f;--gridline:#222926;--skink:#fbf8f1;--h-idle:24%;--h-done:38%;--h-on:62%;--wash-on:20%;--bg:#111614;--surf:#171d1b;--line:#2b3330;--grp:#161c1a;--bar:#161c1a;--done:#1e2522;--faint:#78827d;--mut:#a0a9a4}}
-:root[data-theme=dark] .sketch{--paper:#1b211f;--gridline:#222926;--skink:#fbf8f1;--h-idle:24%;--h-done:38%;--h-on:62%;--wash-on:20%;--bg:#111614;--surf:#171d1b;--line:#2b3330;--grp:#161c1a;--bar:#161c1a;--done:#1e2522;--faint:#78827d;--mut:#a0a9a4}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .sketch{--paper:#1b211f;--gridline:#222926;--skink:#ffffff;--h-idle:16%;--h-done:26%;--h-on:44%;--wash-on:15%;--bg:#111614;--surf:#171d1b;--line:#2b3330;--grp:#161c1a;--bar:#161c1a;--done:#1e2522;--faint:#78827d;--mut:#a0a9a4}}
+:root[data-theme=dark] .sketch{--paper:#1b211f;--gridline:#222926;--skink:#ffffff;--h-idle:16%;--h-done:26%;--h-on:44%;--wash-on:15%;--bg:#111614;--surf:#171d1b;--line:#2b3330;--grp:#161c1a;--bar:#161c1a;--done:#1e2522;--faint:#78827d;--mut:#a0a9a4}
 .sketch .canvas{background-color:var(--paper);background-image:linear-gradient(var(--gridline) 1px,transparent 1px),linear-gradient(90deg,var(--gridline) 1px,transparent 1px);background-size:22px 22px}
 .sketch svg.dia{font-family:Hand,"Bradley Hand","Comic Sans MS",cursive}
 .sketch .node .shape,.sketch .grp,.sketch .nshape{fill:transparent;stroke:transparent}
@@ -51,22 +52,24 @@ svg.dia{width:100%;height:auto;display:block;margin:0 auto}svg.phone{display:non
 .sketch .node.on .shape{fill:color-mix(in srgb,var(--c,var(--acc)) var(--wash-on),var(--paper))}.sketch .node.on .sko{stroke:var(--c,var(--acc))}
 .sketch .node.on .sko{stroke-width:2.6}
 .sketch .node.kind-external .sko{stroke-dasharray:7 5}
-.sketch .node text{fill:var(--skink);paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}.sketch .node.on text,.sketch .node.done text{fill:var(--skink)}
-.sketch .lbl{font-weight:400;font-size:17px}.sketch .sub{font-size:13px}.sketch .node .sub,.sketch .node.on .sub,.sketch .node.done .sub{fill:color-mix(in srgb,var(--skink) 88%,var(--paper))}
+.sketch .node text{fill:var(--skink)}.sketch .node.on text,.sketch .node.done text{fill:var(--skink)}
+.sketch .lbl{font-weight:400;font-size:17px}.sketch .sub{font-size:13px}.sketch .node .sub,.sketch .node.on .sub,.sketch .node.done .sub{fill:var(--skink)}
 .sketch .edge{stroke:transparent}.sketch .edge.on{stroke:var(--c,var(--acc));opacity:.85}
 .sketch .ske .sko{stroke:color-mix(in srgb,var(--skink) 70%,var(--paper));stroke-width:1.4}
 .sketch .edge.k-async + .ske .skb .sko{stroke-dasharray:5 6}.sketch .edge.k-reply + .ske .skb .sko{stroke-dasharray:8 5}
 .sketch .edge.tone + .ske .sko{stroke:color-mix(in srgb,var(--c) 75%,var(--paper))}
 .sketch .edge.done + .ske .sko{stroke:var(--skink)}
 .sketch .edge.on + .ske .sko{stroke:var(--c,var(--acc));stroke-width:2.2}
-.sketch .elbl{fill:var(--skink);stroke:var(--paper);font-size:14px}
+.sketch .elbl{fill:var(--skink);font-size:15px}
 .sketch .elbl.on,.sketch .elbl.tone{fill:var(--c,var(--acc))}
 .sketch .skg .sko{stroke:color-mix(in srgb,var(--c,var(--skink)) 60%,var(--paper));stroke-dasharray:9 7;stroke-width:1.3}
-.sketch .glbl{stroke:var(--paper);font-size:14px;font-weight:400}
+.sketch .glbl{font-size:14px;font-weight:400}
 .sketch .skl .sko{stroke:color-mix(in srgb,var(--skink) 40%,var(--paper));stroke-dasharray:4 6;stroke-width:1.2}.sketch .life{stroke:transparent}
 .sketch .skn .skh{stroke:color-mix(in srgb,#f5c542 30%,var(--paper))}.sketch .skn .sko{stroke:color-mix(in srgb,var(--skink) 60%,var(--paper))}
-.sketch .ntxt{font-size:14px;fill:var(--skink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round}
+.sketch .ntxt{font-size:14px;fill:var(--skink)}
 .sketch .mnum{fill:var(--skink)}
+.sketch .node text{stroke:var(--skink);stroke-width:.6px;stroke-linejoin:round;paint-order:normal}.sketch .node .sub{stroke-width:.3px}
+.sketch .elbl,.sketch .glbl,.sketch .ntxt,.sketch .mnum{paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}
 .sketch .legend i{border-radius:2px;background:color-mix(in srgb,var(--c) 34%,var(--paper));border:1.5px solid var(--skink)}
 .phone .edge.skip:not(.on):not(.done) + .ske{opacity:0}
 @media (prefers-reduced-motion:reduce){.sketch .sko,.sketch .skh{transition:none}}
