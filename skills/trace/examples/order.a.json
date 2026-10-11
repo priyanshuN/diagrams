@@ -1,0 +1,16 @@
+{
+  "title": "Checkout, run A",
+  "participants": [
+    {"id": "app", "label": "Shop app"}, {"id": "api", "label": "Orders API"},
+    {"id": "queue", "label": "Queue"}, {"id": "worker", "label": "Payment worker"}, {"id": "db", "label": "Orders DB"}
+  ],
+  "ignore": ["orderId"],
+  "steps": [
+    {"from": "app", "to": "api", "label": "POST /orders", "t": "2026-10-11T09:00:00.000Z", "values": {"orderId": 1041, "items": 2}},
+    {"from": "api", "to": "db", "label": "insert order", "t": "2026-10-11T09:00:00.040Z", "values": {"orderId": 1041, "status": "PENDING"}},
+    {"from": "api", "to": "queue", "label": "order.created", "kind": "async", "t": "2026-10-11T09:00:00.055Z", "values": {"orderId": 1041}},
+    {"from": "api", "to": "app", "label": "202 accepted", "kind": "reply", "t": "2026-10-11T09:00:00.060Z"},
+    {"from": "queue", "to": "worker", "label": "consume order.created", "kind": "async", "t": "2026-10-11T09:00:00.300Z"},
+    {"from": "worker", "to": "db", "label": "update order", "t": "2026-10-11T09:00:01.900Z", "values": {"orderId": 1041, "status": "PAID"}, "note": "charge took 1.6s"}
+  ]
+}

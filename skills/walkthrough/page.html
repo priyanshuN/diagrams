@@ -95,8 +95,8 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
 </style></head><body class="__THEME__"><main>
 <header>
  <div><h1>__TITLE__</h1><p class="lead" id="lead">__LEAD__</p></div>
- <div class="tools"><label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch" checked>Pause to predict</label>
-  <button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button></div>
+ <div class="tools"><label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch">Pause to predict</label>
+  <button class="tool" id="ovbtn" title="Show the whole diagram (Esc)">Overview</button><button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button><button class="tool" id="imgcopy" title="Copy the diagram as it looks now (PNG)">Copy image</button><button class="tool" id="imgsave" title="Save the diagram as it looks now (PNG)">Download image</button></div>
 </header>
 <div class="stage" id="stage" style="--sw:__STAGEW__px">
  <div class="canvas">__SVGDESK____SVGPHONE__<div class="legend" id="legend"></div></div>
@@ -106,6 +106,7 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
   <button class="ibtn" id="next" aria-label="Next step"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
   <div class="prog" id="prog" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuenow="0"><i id="fill"></i></div>
   <span class="t" id="t">0:00</span>
+  <button class="ibtn" id="mute" aria-label="Mute" aria-pressed="false" title="Mute (M)"></button>
   <select class="rate" id="rate" aria-label="Speed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
  </div>
 </div>
@@ -119,7 +120,9 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
 const D=__DATA__,S=D.steps,M=D.meta,$=id=>document.getElementById(id),a=$('a');
 const nodes=[...document.querySelectorAll('.node')],edges=[...document.querySelectorAll('.edge')],elbls=[...document.querySelectorAll('.elbl')];
 const store={get(k){try{return localStorage.getItem('nw:'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('nw:'+k,v)}catch(e){}}};
-const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',pause:'<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>'};
+const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',pause:'<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>',
+ vol:'<svg viewBox="0 0 16 16"><path d="M1 6h3l4-3.5v11L4 10H1z"/><path d="M10.5 5.2a4 4 0 0 1 0 5.6M12.6 3.2a7 7 0 0 1 0 9.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+ muted:'<svg viewBox="0 0 16 16"><path d="M1 6h3l4-3.5v11L4 10H1z"/><path d="M10.5 5.5l4.5 5M15 5.5l-4.5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'};
 const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const dur=()=>a.duration||M.seconds;
 // ---- header meta + transcript rows
@@ -157,7 +160,14 @@ function drawTokens(){const t=a.currentTime,[i,c]=stateAt(t),s=S[i],start=c>=0?s
 // ---- diagram state: a step's base lighting, replaced by each cue as its word is spoken
 function stateAt(t){let i=0;S.forEach((s,j)=>{if(t>=s.t-0.01)i=j});const s=S[i];let c=-1;s.cues.forEach((q,k)=>{if(t>=q.t-0.01)c=k});return[i,c]}
 function lit(i,c){const s=S[i];return c<0?{focus:s.focus,edges:s.edges}:s.cues[c]}
-let cur=[-1,-1];
+let cur=[-1,-1],ov=false;
+function overview(){ov=true;cur=[-1,-1];
+ nodes.forEach(n=>{n.classList.remove('on');n.classList.add('done')});edges.forEach(e=>{e.classList.remove('on');e.classList.add('done')});
+ elbls.forEach(e=>e.classList.remove('on'));pools.forEach(pool=>pool.forEach(g=>g.classList.add('off')));
+ $('stepno').textContent=`Overview · ${S.length} steps`;$('cap').textContent='The whole flow at once. Press play, or pick a step, to walk through it.';$('src').replaceChildren();
+ [...$('steps').children].forEach(li=>li.classList.remove('on','past'));
+ if(anyItem){shownItem=undefined;$('item').className='item';$('iname').textContent='Nothing yet';$('iwhere').textContent='';$('ifields').replaceChildren()}
+ try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
 function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==i;cur=[i,c];
  const now=lit(i,c),seenN=new Set(),seenE=new Set();
  const add=x=>{x.focus.forEach(n=>seenN.add(n));x.edges.forEach(e=>seenE.add(e))};
@@ -170,25 +180,30 @@ function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==
   $('src').replaceChildren(...(S[i].src.length?[Object.assign(document.createElement('span'),{textContent:'Code'}),...S[i].src.map(p=>Object.assign(document.createElement('code'),{textContent:p}))]:[]));
   [...$('steps').children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('past',j<i)});
   try{history.replaceState(null,'','#'+(i+1))}catch(e){}}}
-function go(i,play){if(quizOn)return;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
+// back to the overview: stop, rewind, show the whole diagram
+function back(){if(quizOn)return;a.pause();hideCard();asked.clear();skipAsk=-1;overview();a.currentTime=0}
+function go(i,play){if(quizOn)return;ov=false;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
 // ---- predict pauses: pause when playback reaches a step that has "ask"
 const asked=new Set();let skipAsk=-1;
-function tick(){if(quizOn)return;const [i,c]=stateAt(a.currentTime);
+function tick(){if(quizOn||ov&&a.paused)return;const [i,c]=stateAt(a.currentTime);
  if(!a.paused&&$('predict').checked&&S[i].ask&&!asked.has(i)&&i!==skipAsk&&a.currentTime-S[i].t<0.6){asked.add(i);a.pause();a.currentTime=S[i].t;askCard(i);}
  paint(i,c);drawTokens();$('fill').style.width=(100*a.currentTime/dur())+'%';$('prog').setAttribute('aria-valuenow',Math.round(a.currentTime));
  $('t').textContent=fmt(a.currentTime)+' / '+fmt(dur())}
 function loop(){tick();if(!a.paused)requestAnimationFrame(loop)}
 function setPlayIcon(){const p=a.paused;$('play').innerHTML=p?ICON.play:ICON.pause;$('play').setAttribute('aria-label',p?'Play':'Pause')}
-a.onplay=()=>{setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
+a.onplay=()=>{ov=false;setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
 a.onloadedmetadata=()=>{$('prog').setAttribute('aria-valuemax',Math.round(a.duration));S.slice(1).forEach(s=>{const b=document.createElement('b');b.style.left=(100*s.t/a.duration)+'%';$('prog').appendChild(b)});tick()};
 $('play').addEventListener('click',e=>{if(quizOn){e.stopImmediatePropagation()}},true);
-$('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>go(cur[0]-1,!a.paused);$('next').onclick=()=>go(cur[0]+1,!a.paused);
-$('prog').onclick=e=>{skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
-$('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
+$('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>cur[0]<=0?back():go(cur[0]-1,!a.paused);$('ovbtn').onclick=back;a.addEventListener('ended',back);$('next').onclick=()=>go(cur[0]+1,!a.paused);
+$('prog').onclick=e=>{ov=false;skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
+$('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();ov=false;skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
 const r0=store.get('rate');if(r0){$('rate').value=r0;a.playbackRate=+r0}$('rate').onchange=e=>{a.playbackRate=+e.target.value;store.set('rate',e.target.value)};
+// mute: for this visit only, so a page never opens silent
+function setMute(){const m=a.muted;$('mute').innerHTML=m?ICON.muted:ICON.vol;$('mute').setAttribute('aria-label',m?'Unmute':'Mute');$('mute').setAttribute('aria-pressed',m);$('mute').title=m?'Unmute (M)':'Mute (M)'}
+$('mute').onclick=()=>{a.muted=!a.muted};a.addEventListener('volumechange',setMute);setMute();
 document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,select'))return;
  if(quizOn){if(e.key==='Escape')endQuiz();else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.n){e.preventDefault();answer(e.target.dataset.n)}return}
- if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')go(cur[0]-1,!a.paused);
+ if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')cur[0]<=0?back():go(cur[0]-1,!a.paused);else if(e.key==='Escape')back();else if(e.key==='m'||e.key==='M')$('mute').click();
  else if(/^[1-9]$/.test(e.key))go(+e.key-1,!a.paused)});
 // ---- card (predict + quiz)
 function card(h,q,ans,buttons){$('cardh').textContent=h;$('cardq').textContent=q;$('carda').textContent=ans||'';$('carda').hidden=true;$('cardb').innerHTML='';
@@ -220,6 +235,37 @@ $('notes').onclick=async()=>{const md=[`# ${D.title}`,D.lead?`\n${D.lead}\n`:'',
  M.sha?`\nBuilt from ${M.repo}@${M.sha} on ${M.built}.`:''].join('\n');
  try{await navigator.clipboard.writeText(md)}catch(e){const t=document.createElement('textarea');t.value=md;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
  $('notes').textContent='Copied';setTimeout(()=>$('notes').textContent='Copy as notes',1500)};
+// ---- image export: the diagram as it looks now, as a PNG with the page's styles inlined
+function diagramSvg(){
+ const src=[...document.querySelectorAll('svg.dia')].find(v=>v.getClientRects().length)||document.querySelector('svg.dia');
+ const vb=src.viewBox.baseVal,svg=src.cloneNode(true),k=2;
+ svg.setAttribute('xmlns',NS);svg.setAttribute('width',vb.width*k);svg.setAttribute('height',vb.height*k);
+ svg.setAttribute('style',`font-family:${getComputedStyle(src).fontFamily}`);svg.classList.remove('desk','phone','quiz');svg.classList.add(...document.body.classList);
+ // freeze light or dark: in an image, prefers-color-scheme may not match the page
+ svg.setAttribute('data-theme',document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+ const css=[...document.styleSheets].flatMap(sh=>{try{return [...sh.cssRules].map(r=>r.cssText)}catch(e){return []}}).join('\n');
+ const st=document.createElementNS(NS,'style');st.textContent=css;
+ const bg=document.createElementNS(NS,'rect');
+ for(const [n,v] of [['x',vb.x],['y',vb.y],['width',vb.width],['height',vb.height]])bg.setAttribute(n,v);
+ bg.setAttribute('fill',getComputedStyle($('stage')).backgroundColor);
+ svg.prepend(st,bg);
+ return {text:new XMLSerializer().serializeToString(svg),w:vb.width*k,h:vb.height*k};
+}
+async function diagramPng(){
+ const {text,w,h}=diagramSvg(),img=new Image();
+ await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(text)});
+ const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+ return new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('no image')),'image/png'));
+}
+const imgName=()=>(D.title||'diagram').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function save(blob,ext){const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=`${imgName()}.${ext}`;l.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function flash(id,msg,back){$(id).textContent=msg;setTimeout(()=>$(id).textContent=back,1800)}
+$('imgsave').onclick=async()=>{
+ // a browser that will not draw the SVG onto a canvas still gets the vector file
+ try{save(await diagramPng(),'png')}catch(e){save(new Blob([diagramSvg().text],{type:'image/svg+xml'}),'svg')}};
+$('imgcopy').onclick=async()=>{
+ try{await navigator.clipboard.write([new ClipboardItem({'image/png':diagramPng()})]);flash('imgcopy','Copied','Copy image')}
+ catch(e){$('imgsave').onclick();flash('imgcopy','Saved instead','Copy image')}};
 $('foot').textContent=M.sha?`Built from ${M.repo} at ${M.sha} on ${M.built}.`:`Built on ${M.built}.`;
 // ---- self-test for the agent: window.__nw.selftest()
 // a sequence on a phone scrolls sideways: keep the lit message (or box) in view
@@ -257,6 +303,6 @@ window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const
  if(fs<10)out.problems.push(`labels render at ${fs.toFixed(1)}px`);out.labelPx=+fs.toFixed(1);
  cur=[-1,-1];paint(...stateAt(a.currentTime));out.ok=!out.problems.length;return out}};
 // ---- start at #n
-const h=parseInt(location.hash.slice(1)),h0=h>=1&&h<=S.length?h-1:0;paint(...stateAt(S[h0].t));
-if(a.readyState>=1)go(h0,false);else a.addEventListener('loadedmetadata',()=>go(h0,false),{once:true});
+const h=parseInt(location.hash.slice(1));if(h>=1&&h<=S.length)paint(...stateAt(S[h-1].t));else overview();
+if(h>=1&&h<=S.length){if(a.readyState>=1)go(h-1,false);else a.addEventListener('loadedmetadata',()=>go(h-1,false),{once:true})}
 </script></body></html>

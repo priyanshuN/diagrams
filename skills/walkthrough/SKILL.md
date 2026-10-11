@@ -31,7 +31,7 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
   "lead": "One line saying what this explains.",
   "voice": "af_heart",
   "repo": "~/code/shop",
-  "theme": "sketch",
+  "theme": "clean",
   "diagram": "graph LR\n  customer[Customer<br/>web browser]\n  shop[Shop API<br/>order service]\n  ...\n  shop -->|charge card| pay",
   "look": {"customer": {"kind": "external", "color": "slate", "at": [0, 0]}, "provider": {"color": "sky"}},
   "legend": [{"color": "slate", "label": "Outside your system"}],
@@ -47,7 +47,7 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 
 **The diagram**
 - `diagram` is Mermaid: `graph TD|LR` for a flow, `sequenceDiagram` for a sequence. `look` and `legend` follow the diagrams:flow rules. The same Mermaid also renders as chat text with `${CLAUDE_SKILL_DIR}/../flow/fd`.
-- `theme` is `sketch` (the default: hand-drawn on graph paper) or `clean`.
+- `theme` is `clean` (the default: crisp lines) or `sketch` (hand-drawn on graph paper).
 - Use 4–8 nodes. A label has at most 3 words; a sub-label (`<br/>` second line) has at most 4.
 - **Flow:** give `at` positions in the look whenever the flow branches, loops back or skips a node. Without them, nodes are placed in layers, which can render long and small. The phone layout ignores `at` and stacks nodes in the order the narration first lights them.
 - Give a decision's two outcomes different sides: one straight down, one straight right (for example `decide` at [2,1], `orders` at [3,1], `retry` at [2,2]). If the build warns that two arrows "run side by side", move a box with `at`.

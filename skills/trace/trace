@@ -1,0 +1,4 @@
+#!/bin/bash
+# Wrapper so the skill runs from any directory. Needs Node and `npm ci` at the plugin root (for --text).
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node "$here/trace.mjs" "$@"

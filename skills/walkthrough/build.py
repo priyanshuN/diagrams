@@ -149,7 +149,7 @@ def validate(scene):
     for k in ('title', 'nodes', 'steps'):
         if not scene.get(k):
             errs.append(f'"{k}" is missing or empty' + (' (or give a Mermaid "diagram")' if k == 'nodes' else ''))
-    if scene.get('theme', 'sketch') not in D.THEMES:
+    if scene.get('theme', 'clean') not in D.THEMES:
         errs.append(f'"theme" must be one of {sorted(D.THEMES)}')
     if errs:
         raise SceneError('\n'.join(errs))
@@ -411,7 +411,7 @@ def main():
     spoken = [speakable(s.get('say') or s['caption'], lex) for s in scene['steps']]
 
     warnings = []
-    theme = scene.get('theme', 'sketch')
+    theme = scene.get('theme', 'clean')
     svg_desk, svg_phone = D.render_pair(scene, warnings, theme, scene.get('cols'))
     srcs = [resolve_src(scene, i, s['src'], warnings) if s.get('src') else [] for i, s in enumerate(scene['steps'])]
     for i, line in enumerate(spoken):
