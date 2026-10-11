@@ -2,8 +2,9 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
-## Unreleased
+## 0.2.1 (2026-10-11)
 
+- README: the update commands name the `skills` marketplace, where the plugin is now listed.
 - Readability: unlit box names and arrow labels use the muted ink instead of the faint one (about 6:1 contrast on white instead of 3:1); unchanged steps in a `trace` diff fade to 55% instead of 38%.
 - Walkthrough build: `node --check` runs on the page script before any audio is made, so a script error fails the build (`ok: false`, with the line) instead of shipping a page whose controls do nothing.
 
