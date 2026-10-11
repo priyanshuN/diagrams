@@ -96,7 +96,7 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
 <header>
  <div><h1>__TITLE__</h1><p class="lead" id="lead">__LEAD__</p></div>
  <div class="tools"><label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch">Pause to predict</label>
-  <button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button><button class="tool" id="imgcopy" title="Copy the diagram as it looks now (PNG)">Copy image</button><button class="tool" id="imgsave" title="Save the diagram as it looks now (PNG)">Download image</button></div>
+  <button class="tool" id="ovbtn" title="Show the whole diagram (Esc)">Overview</button><button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button><button class="tool" id="imgcopy" title="Copy the diagram as it looks now (PNG)">Copy image</button><button class="tool" id="imgsave" title="Save the diagram as it looks now (PNG)">Download image</button></div>
 </header>
 <div class="stage" id="stage" style="--sw:__STAGEW__px">
  <div class="canvas">__SVGDESK____SVGPHONE__<div class="legend" id="legend"></div></div>
@@ -177,6 +177,8 @@ function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==
   $('src').replaceChildren(...(S[i].src.length?[Object.assign(document.createElement('span'),{textContent:'Code'}),...S[i].src.map(p=>Object.assign(document.createElement('code'),{textContent:p}))]:[]));
   [...$('steps').children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('past',j<i)});
   try{history.replaceState(null,'','#'+(i+1))}catch(e){}}}
+// back to the overview: stop, rewind, show the whole diagram
+function back(){if(quizOn)return;a.pause();hideCard();asked.clear();skipAsk=-1;overview();a.currentTime=0}
 function go(i,play){if(quizOn)return;ov=false;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
 // ---- predict pauses: pause when playback reaches a step that has "ask"
 const asked=new Set();let skipAsk=-1;
@@ -189,13 +191,13 @@ function setPlayIcon(){const p=a.paused;$('play').innerHTML=p?ICON.play:ICON.pau
 a.onplay=()=>{ov=false;setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
 a.onloadedmetadata=()=>{$('prog').setAttribute('aria-valuemax',Math.round(a.duration));S.slice(1).forEach(s=>{const b=document.createElement('b');b.style.left=(100*s.t/a.duration)+'%';$('prog').appendChild(b)});tick()};
 $('play').addEventListener('click',e=>{if(quizOn){e.stopImmediatePropagation()}},true);
-$('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>go(cur[0]-1,!a.paused);$('next').onclick=()=>go(cur[0]+1,!a.paused);
-$('prog').onclick=e=>{skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
-$('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
+$('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>cur[0]<=0?back():go(cur[0]-1,!a.paused);$('ovbtn').onclick=back;a.addEventListener('ended',back);$('next').onclick=()=>go(cur[0]+1,!a.paused);
+$('prog').onclick=e=>{ov=false;skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
+$('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();ov=false;skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
 const r0=store.get('rate');if(r0){$('rate').value=r0;a.playbackRate=+r0}$('rate').onchange=e=>{a.playbackRate=+e.target.value;store.set('rate',e.target.value)};
 document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,select'))return;
  if(quizOn){if(e.key==='Escape')endQuiz();else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.n){e.preventDefault();answer(e.target.dataset.n)}return}
- if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')go(cur[0]-1,!a.paused);
+ if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')cur[0]<=0?back():go(cur[0]-1,!a.paused);else if(e.key==='Escape')back();
  else if(/^[1-9]$/.test(e.key))go(+e.key-1,!a.paused)});
 // ---- card (predict + quiz)
 function card(h,q,ans,buttons){$('cardh').textContent=h;$('cardq').textContent=q;$('carda').textContent=ans||'';$('carda').hidden=true;$('cardb').innerHTML='';
