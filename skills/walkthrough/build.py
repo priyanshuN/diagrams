@@ -385,6 +385,22 @@ def place_cues(scene, spoken, words_per_step, lex):
 
 # ---------------------------------------------------------------- main
 
+def page_script_error():
+    """Syntax-check page.html's script with `node --check`, before any audio is made.
+    A syntax error stops every control on the page, and nothing else in the build would notice."""
+    if not shutil.which('node'):
+        return None
+    src = open(os.path.join(SKILL_DIR, 'page.html')).read()
+    js = src[src.index('<script>') + len('<script>'):src.rindex('</script>')].replace('__DATA__', '{}')
+    with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False) as f:
+        f.write(js)
+    try:
+        r = subprocess.run(['node', '--check', f.name], capture_output=True, text=True)
+    finally:
+        os.unlink(f.name)
+    return None if r.returncode == 0 else 'page.html script: ' + ' '.join(r.stderr.strip().splitlines()[:5])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('scene')
@@ -402,6 +418,9 @@ def main():
         log(f'scene error:\n{ex}')
         print(json.dumps({'ok': False, 'error': str(ex)}))
         sys.exit(2)
+    script_err = page_script_error()
+    if script_err:
+        log(script_err); print(json.dumps({'ok': False, 'error': script_err})); sys.exit(2)
 
     voice = args.voice or scene.get('voice', 'af_heart')
     if not VOICE_RE.match(voice):
