@@ -157,7 +157,14 @@ function drawTokens(){const t=a.currentTime,[i,c]=stateAt(t),s=S[i],start=c>=0?s
 // ---- diagram state: a step's base lighting, replaced by each cue as its word is spoken
 function stateAt(t){let i=0;S.forEach((s,j)=>{if(t>=s.t-0.01)i=j});const s=S[i];let c=-1;s.cues.forEach((q,k)=>{if(t>=q.t-0.01)c=k});return[i,c]}
 function lit(i,c){const s=S[i];return c<0?{focus:s.focus,edges:s.edges}:s.cues[c]}
-let cur=[-1,-1];
+let cur=[-1,-1],ov=false;
+function overview(){ov=true;cur=[-1,-1];
+ nodes.forEach(n=>{n.classList.remove('on');n.classList.add('done')});edges.forEach(e=>{e.classList.remove('on');e.classList.add('done')});
+ elbls.forEach(e=>e.classList.remove('on'));pools.forEach(pool=>pool.forEach(g=>g.classList.add('off')));
+ $('stepno').textContent=`Overview · ${S.length} steps`;$('cap').textContent='The whole flow at once. Press play, or pick a step, to walk through it.';$('src').replaceChildren();
+ [...$('steps').children].forEach(li=>li.classList.remove('on','past'));
+ if(anyItem){shownItem=undefined;$('item').className='item';$('iname').textContent='Nothing yet';$('iwhere').textContent='';$('ifields').replaceChildren()}
+ try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
 function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==i;cur=[i,c];
  const now=lit(i,c),seenN=new Set(),seenE=new Set();
  const add=x=>{x.focus.forEach(n=>seenN.add(n));x.edges.forEach(e=>seenE.add(e))};
@@ -170,16 +177,16 @@ function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==
   $('src').replaceChildren(...(S[i].src.length?[Object.assign(document.createElement('span'),{textContent:'Code'}),...S[i].src.map(p=>Object.assign(document.createElement('code'),{textContent:p}))]:[]));
   [...$('steps').children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('past',j<i)});
   try{history.replaceState(null,'','#'+(i+1))}catch(e){}}}
-function go(i,play){if(quizOn)return;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
+function go(i,play){if(quizOn)return;ov=false;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
 // ---- predict pauses: pause when playback reaches a step that has "ask"
 const asked=new Set();let skipAsk=-1;
-function tick(){if(quizOn)return;const [i,c]=stateAt(a.currentTime);
+function tick(){if(quizOn||ov&&a.paused)return;const [i,c]=stateAt(a.currentTime);
  if(!a.paused&&$('predict').checked&&S[i].ask&&!asked.has(i)&&i!==skipAsk&&a.currentTime-S[i].t<0.6){asked.add(i);a.pause();a.currentTime=S[i].t;askCard(i);}
  paint(i,c);drawTokens();$('fill').style.width=(100*a.currentTime/dur())+'%';$('prog').setAttribute('aria-valuenow',Math.round(a.currentTime));
  $('t').textContent=fmt(a.currentTime)+' / '+fmt(dur())}
 function loop(){tick();if(!a.paused)requestAnimationFrame(loop)}
 function setPlayIcon(){const p=a.paused;$('play').innerHTML=p?ICON.play:ICON.pause;$('play').setAttribute('aria-label',p?'Play':'Pause')}
-a.onplay=()=>{setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
+a.onplay=()=>{ov=false;setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
 a.onloadedmetadata=()=>{$('prog').setAttribute('aria-valuemax',Math.round(a.duration));S.slice(1).forEach(s=>{const b=document.createElement('b');b.style.left=(100*s.t/a.duration)+'%';$('prog').appendChild(b)});tick()};
 $('play').addEventListener('click',e=>{if(quizOn){e.stopImmediatePropagation()}},true);
 $('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>go(cur[0]-1,!a.paused);$('next').onclick=()=>go(cur[0]+1,!a.paused);
@@ -288,6 +295,6 @@ window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const
  if(fs<10)out.problems.push(`labels render at ${fs.toFixed(1)}px`);out.labelPx=+fs.toFixed(1);
  cur=[-1,-1];paint(...stateAt(a.currentTime));out.ok=!out.problems.length;return out}};
 // ---- start at #n
-const h=parseInt(location.hash.slice(1)),h0=h>=1&&h<=S.length?h-1:0;paint(...stateAt(S[h0].t));
-if(a.readyState>=1)go(h0,false);else a.addEventListener('loadedmetadata',()=>go(h0,false),{once:true});
+const h=parseInt(location.hash.slice(1));if(h>=1&&h<=S.length)paint(...stateAt(S[h-1].t));else overview();
+if(h>=1&&h<=S.length){if(a.readyState>=1)go(h-1,false);else a.addEventListener('loadedmetadata',()=>go(h-1,false),{once:true})}
 </script></body></html>
