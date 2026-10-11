@@ -63,7 +63,7 @@ Installed copies update only when `version` in `.claude-plugin/plugin.json` goes
 1. Raise `version`: the third number for a fix (0.1.0 → 0.1.1), the second for a new feature (0.1.1 → 0.2.0).
 2. Add a line for the version at the top of `CHANGELOG.md`.
 3. Commit, push, and tag the commit `vX.Y.Z`.
-4. On each machine: `claude plugin marketplace update diagrams`, then `claude plugin update diagrams@diagrams`, then restart Claude Code. With auto-update on, Claude Code does this at start-up.
+4. On each machine: `claude plugin marketplace update skills`, then `claude plugin update diagrams@skills`, then restart Claude Code. The plugin is listed in the `skills` marketplace (priyanshuN/skills). With auto-update on, Claude Code does this at start-up.
 
 ## Ideas and bugs
 
