@@ -2,6 +2,11 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
+## Unreleased
+
+- Readability: unlit box names and arrow labels use the muted ink instead of the faint one (about 6:1 contrast on white instead of 3:1); unchanged steps in a `trace` diff fade to 55% instead of 38%.
+- Walkthrough build: `node --check` runs on the page script before any audio is made, so a script error fails the build (`ok: false`, with the line) instead of shipping a page whose controls do nothing.
+
 ## 0.2.0 (2026-10-11)
 
 - New skill `trace`: a recorded run (a trace file of steps with values) becomes a sequence diagram, and two runs become a diff with `[+]` added, `[-]` removed and `[~]` changed steps. Steps match on caller, callee and label; values that change every run (ids, times) are left out with `ignore`. Exit code 0 when the runs match and 1 when they differ. Renders through `flow` (`--text`) or as Mermaid for `pic`.
