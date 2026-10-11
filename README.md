@@ -6,6 +6,8 @@ A Claude Code plugin for flow and sequence diagrams. One Mermaid source gives th
 Mermaid ─┬─► diagrams:flow ─────────► Unicode text in chat (terminal + desktop app)
          │                  └───────► picture page: sketch (default) or clean
          └─► diagrams:walkthrough ──► picture + local voice, word-timed cues, recall quiz
+
+trace file(s) ─► diagrams:trace ──► Mermaid sequence (one run, or two runs with changes marked)
 ```
 
 ## Install (each machine, once)
@@ -29,6 +31,7 @@ To get new releases without running a command, turn on auto-update: `/plugin` �
 |---|---|---|
 | `flow` | Node 18+, `uv` (it fetches Python 3.12 by itself) | yes |
 | `walkthrough` | the above; `ffmpeg` on Linux for compact audio | yes |
+| `trace` | Node 18+ (and the `flow` libraries for `--text`) | yes |
 
 Both skills run on uv's Python 3.12, so no system Python upgrade is needed on either machine. Without `uv`, the flow picture tool falls back to `python3` (3.9+).
 

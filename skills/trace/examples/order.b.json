@@ -1,0 +1,17 @@
+{
+  "title": "Checkout, run B",
+  "participants": [
+    {"id": "app", "label": "Shop app"}, {"id": "api", "label": "Orders API"},
+    {"id": "queue", "label": "Queue"}, {"id": "worker", "label": "Payment worker"}, {"id": "db", "label": "Orders DB"}
+  ],
+  "ignore": ["orderId"],
+  "steps": [
+    {"from": "app", "to": "api", "label": "POST /orders", "t": "2026-10-11T10:00:00.000Z", "values": {"orderId": 1077, "items": 2}},
+    {"from": "api", "to": "db", "label": "insert order", "t": "2026-10-11T10:00:00.035Z", "values": {"orderId": 1077, "status": "PENDING"}},
+    {"from": "api", "to": "queue", "label": "order.created", "kind": "async", "t": "2026-10-11T10:00:00.050Z", "values": {"orderId": 1077}},
+    {"from": "api", "to": "app", "label": "202 accepted", "kind": "reply", "t": "2026-10-11T10:00:00.052Z"},
+    {"from": "queue", "to": "worker", "label": "consume order.created", "kind": "async", "t": "2026-10-11T10:00:00.280Z"},
+    {"from": "worker", "to": "db", "label": "update order", "t": "2026-10-11T10:00:02.400Z", "values": {"orderId": 1077, "status": "FAILED"}},
+    {"from": "worker", "to": "queue", "label": "order.retry", "kind": "async", "t": "2026-10-11T10:00:02.410Z", "values": {"orderId": 1077, "attempt": 1}}
+  ]
+}
