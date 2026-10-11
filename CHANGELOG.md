@@ -8,6 +8,7 @@ Installed copies update only when the version in `.claude-plugin/plugin.json` go
 - Picture pages and walkthroughs now default to the clean theme; `--theme sketch` (or `"theme": "sketch"` in a scene) keeps the hand-drawn look.
 - Clean theme: one text weight everywhere (title, box names, labels, step numbers). Bold only held text against the sketch lines; colour carries emphasis.
 - Walkthrough: the page opens on an overview, the whole diagram at full strength with no step lit; play, a step or the arrow keys start the walk at step 1. A link with `#n` still opens at step n. Back to the overview: the Overview button, Esc, ← or the previous-step button from step 1, or the end of the narration.
+- Walkthrough: a mute button in the player (and the M key). Mute lasts for the visit only, so a page never opens silent.
 - Walkthrough: "Pause to predict" starts off (a viewer's own choice is still remembered). New "Copy image" and "Download image" buttons export the diagram as it looks at the current step, as a 2× PNG with the page's styles and font (an SVG file if the browser will not draw a PNG).
 - Sequence pictures colour the diff marks from `trace`: `[+]` green, `[-]` red and dashed, `[~]` amber; unchanged steps fade.
 

@@ -106,6 +106,7 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
   <button class="ibtn" id="next" aria-label="Next step"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
   <div class="prog" id="prog" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuenow="0"><i id="fill"></i></div>
   <span class="t" id="t">0:00</span>
+  <button class="ibtn" id="mute" aria-label="Mute" aria-pressed="false" title="Mute (M)"></button>
   <select class="rate" id="rate" aria-label="Speed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
  </div>
 </div>
@@ -119,7 +120,9 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
 const D=__DATA__,S=D.steps,M=D.meta,$=id=>document.getElementById(id),a=$('a');
 const nodes=[...document.querySelectorAll('.node')],edges=[...document.querySelectorAll('.edge')],elbls=[...document.querySelectorAll('.elbl')];
 const store={get(k){try{return localStorage.getItem('nw:'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('nw:'+k,v)}catch(e){}}};
-const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',pause:'<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>'};
+const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',pause:'<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>',
+ vol:'<svg viewBox="0 0 16 16"><path d="M1 6h3l4-3.5v11L4 10H1z"/><path d="M10.5 5.2a4 4 0 0 1 0 5.6M12.6 3.2a7 7 0 0 1 0 9.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+ muted:'<svg viewBox="0 0 16 16"><path d="M1 6h3l4-3.5v11L4 10H1z"/><path d="M10.5 5.5l4.5 5M15 5.5l-4.5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'};
 const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const dur=()=>a.duration||M.seconds;
 // ---- header meta + transcript rows
@@ -195,9 +198,12 @@ $('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>cur[0]<=
 $('prog').onclick=e=>{ov=false;skipAsk=-1;asked.clear();const r=e.currentTarget.getBoundingClientRect();a.currentTime=(e.clientX-r.left)/r.width*dur()};
 $('prog').onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.stopPropagation();e.preventDefault();ov=false;skipAsk=-1;asked.clear();a.currentTime+=e.key==='ArrowRight'?5:-5}};
 const r0=store.get('rate');if(r0){$('rate').value=r0;a.playbackRate=+r0}$('rate').onchange=e=>{a.playbackRate=+e.target.value;store.set('rate',e.target.value)};
+// mute: for this visit only, so a page never opens silent
+function setMute(){const m=a.muted;$('mute').innerHTML=m?ICON.muted:ICON.vol;$('mute').setAttribute('aria-label',m?'Unmute':'Mute');$('mute').setAttribute('aria-pressed',m);$('mute').title=m?'Unmute (M)':'Mute (M)'}
+$('mute').onclick=()=>{a.muted=!a.muted};a.addEventListener('volumechange',setMute);setMute();
 document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,select'))return;
  if(quizOn){if(e.key==='Escape')endQuiz();else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.n){e.preventDefault();answer(e.target.dataset.n)}return}
- if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')cur[0]<=0?back():go(cur[0]-1,!a.paused);else if(e.key==='Escape')back();
+ if(e.key===' '&&!e.target.closest('button')){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')go(cur[0]+1,!a.paused);else if(e.key==='ArrowLeft')cur[0]<=0?back():go(cur[0]-1,!a.paused);else if(e.key==='Escape')back();else if(e.key==='m'||e.key==='M')$('mute').click();
  else if(/^[1-9]$/.test(e.key))go(+e.key-1,!a.paused)});
 // ---- card (predict + quiz)
 function card(h,q,ans,buttons){$('cardh').textContent=h;$('cardq').textContent=q;$('carda').textContent=ans||'';$('carda').hidden=true;$('cardb').innerHTML='';
