@@ -4,7 +4,7 @@ A Claude Code plugin for flow and sequence diagrams. One Mermaid source gives th
 
 ```
 Mermaid ─┬─► diagrams:flow ─────────► Unicode text in chat (terminal + desktop app)
-         │                  └───────► picture page: sketch (default) or clean
+         │                  └───────► picture page: clean (default) or sketch
          └─► diagrams:walkthrough ──► picture + local voice, word-timed cues, recall quiz
 
 trace file(s) ─► diagrams:trace ──► Mermaid sequence (one run, or two runs with changes marked)

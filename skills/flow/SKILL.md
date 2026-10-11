@@ -20,7 +20,7 @@ One Mermaid source, three outputs. The `diagrams:walkthrough` skill is the top l
 
 ```
 Mermaid ─┬─► fd file.mmd ─────────► Unicode text in a ```text fence (chat)
-         ├─► pic file.mmd ────────► picture page: sketch (default) or clean
+         ├─► pic file.mmd ────────► picture page: clean (default) or sketch
          └─► walkthrough skill ──► picture + voice, cues, quiz
 ```
 
@@ -82,7 +82,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 "${CLAUDE_SKILL_DIR}/pic" diagram.mmd --look look.json --title "Checkout" -o out.html
 ```
 
-- **Sketch is the default**: hand-drawn boxes and arrows (rough.js) on graph paper, with the Architects Daughter font. `--theme clean` gives crisp lines for dense or precise diagrams.
+- **Clean is the default**: crisp lines and one text weight, with colour for emphasis. Use it for anything read for its values: real runs, comparisons, dense diagrams. `--theme sketch` gives hand-drawn boxes and arrows (rough.js) on graph paper, with the Architects Daughter font, for an early design that should look like a draft.
 - Colour means the same in both themes. The fill says who runs a box; the outline and labels stay dark ink so text always wins.
 - Arrows are routed by libavoid. They never cross a box, and each one gets its own attachment point.
 - Prints one JSON line `{"ok", "out", "warnings"}`. Read the warnings. "Wider than tall" means: give `at` positions in the look, or use `graph TD`.

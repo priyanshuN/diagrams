@@ -5,6 +5,9 @@ Installed copies update only when the version in `.claude-plugin/plugin.json` go
 ## 0.2.0 (2026-10-11)
 
 - New skill `trace`: a recorded run (a trace file of steps with values) becomes a sequence diagram, and two runs become a diff with `[+]` added, `[-]` removed and `[~]` changed steps. Steps match on caller, callee and label; values that change every run (ids, times) are left out with `ignore`. Exit code 0 when the runs match and 1 when they differ. Renders through `flow` (`--text`) or as Mermaid for `pic`.
+- Picture pages and walkthroughs now default to the clean theme; `--theme sketch` (or `"theme": "sketch"` in a scene) keeps the hand-drawn look.
+- Clean theme: one text weight everywhere (title, box names, labels, step numbers). Bold only held text against the sketch lines; colour carries emphasis.
+- Sequence pictures colour the diff marks from `trace`: `[+]` green, `[-]` red and dashed, `[~]` amber; unchanged steps fade.
 
 ## 0.1.1 (2026-10-11)
 

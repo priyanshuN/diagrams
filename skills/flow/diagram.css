@@ -75,3 +75,10 @@ svg.dia{width:100%;height:auto;display:block;margin:0 auto}svg.phone{display:non
 @media (prefers-reduced-motion:reduce){.sketch .sko,.sketch .skh{transition:none}}
 /* a sequence cannot restack into one column: on a phone it keeps readable text and scrolls sideways */
 @media (max-width:640px){.canvas:has(svg.seq){overflow-x:auto;-webkit-overflow-scrolling:touch}}
+/* diff marks (diagrams:trace): a changed step is full colour, an unchanged one fades */
+.edge.mark-add,.edge.mark-gone,.edge.mark-chg{stroke:var(--c);stroke-width:2.5}
+.elbl.mark-add,.elbl.mark-gone,.elbl.mark-chg{fill:var(--c);font-weight:400}
+.elbl.mark-gone{font-style:italic}.edge.mark-gone{stroke-dasharray:6 4}
+.edge.mark-dim,.elbl.mark-dim{opacity:.38}
+/* clean theme: one text weight. Bold only held text against the sketch lines; colour carries emphasis here */
+.clean .lbl,.clean .glbl,.clean .elbl,.clean .mnum,.clean .ntxt{font-weight:400}

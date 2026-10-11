@@ -5,7 +5,7 @@ Layer 1b of the diagrams:flow skill. The diagrams:walkthrough skill imports this
 pictures and adds voice, cues and the quiz on top.
 
 usage:
-  python3 diagram.py diagram.mmd [--look look.json] [--theme sketch|clean] [--title T] [-o out.html]
+  python3 diagram.py diagram.mmd [--look look.json] [--theme clean|sketch] [--title T] [-o out.html]
   python3 diagram.py scene.json [-o out.html]         # a scene with "diagram" (+ "look", "theme", "title")
 Prints one JSON line on stdout: {"ok", "out", "warnings"}.
 
@@ -38,7 +38,9 @@ TONES = {'good': 'emerald', 'warn': 'amber', 'bad': 'rose'}
 EDGE_KINDS = {'sync', 'async', 'reply'}
 THEMES = {'sketch', 'clean'}
 NODE_KEYS = {'id', 'label', 'sub', 'at', 'kind', 'color'}
-EDGE_KEYS = {'from', 'to', 'label', 'kind', 'tone'}
+EDGE_KEYS = {'from', 'to', 'label', 'kind', 'tone', 'mark'}
+# diff marks from diagrams:trace at the start of a sequence message: colour the change, fade the rest
+DIFF_MARKS = {'[+]': ('good', 'add'), '[-]': ('bad', 'gone'), '[~]': ('warn', 'chg')}
 GROUP_KEYS = {'label', 'nodes', 'color', 'id'}
 LOOK_NODE_KEYS = {'at', 'color', 'kind', 'sub', 'label'}
 
@@ -80,6 +82,13 @@ def from_mermaid(src, look=None):
         nodes = [{'id': p['id'], 'label': p['label']} for p in g['participants']]
         edges = [{'from': m['from'], 'to': m['to'], 'label': m['label'], 'kind': m['kind'], 'key': f'm{m["n"]}', 'n': m['n']}
                  for m in g['messages']]
+        for ed in edges:
+            hit = next((v for pre, v in DIFF_MARKS.items() if ed['label'].startswith(pre + ' ')), None)
+            if hit:
+                ed['tone'], ed['mark'] = hit
+        if any('mark' in ed for ed in edges):
+            for ed in edges:
+                ed.setdefault('mark', 'dim')
         groups, notes, direction = [], g['notes'], None
     else:
         nodes = []
@@ -657,7 +666,8 @@ def seq_svg(d, tag, warnings):
         put_notes(i)
         a, b = idx[m['from']], idx[m['to']]
         col = TONES.get(m.get('tone'), colors[m['from']])
-        cls = f'edge k-{m.get("kind", "sync")} c-{col}' + (' tone' if m.get('tone') else '')
+        mark = f' mark-{m["mark"]}' if m.get('mark') else ''
+        cls = f'edge k-{m.get("kind", "sync")} c-{col}' + (' tone' if m.get('tone') else '') + mark
         num = f'<tspan class="mnum">{m["n"]}</tspan> '
         if a == b:
             x = xs[a]
@@ -673,7 +683,7 @@ def seq_svg(d, tag, warnings):
             lx, ly, anchor = (xs[a] + xs[b]) / 2, y - 8, 'middle'
             step = SEQ_ROW
         msgs.append(f'<path class="{cls}" data-e="{e(m["key"])}" d="{dd}" marker-end="url(#arr-{tag})"/>')
-        labels.append(f'<text class="elbl mlbl c-{col}" data-e="{e(m["key"])}" x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}">{num}{e(m["label"])}</text>')
+        labels.append(f'<text class="elbl mlbl c-{col}{" tone" if m.get("tone") else ""}{mark}" data-e="{e(m["key"])}" x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}">{num}{e(m["label"])}</text>')
         y += step
     put_notes(len(d['edges']))
     bottom = y - 10
@@ -784,7 +794,7 @@ def diagram_css(theme):
     return css
 
 
-def render(d, tag, warnings, theme='sketch', cols=None, use_at=True):
+def render(d, tag, warnings, theme='clean', cols=None, use_at=True):
     """One SVG for the diagram. Flows use the "at" grid (or `cols` snake); sequences ignore both."""
     if d.get('type') == 'sequence':
         svg = seq_svg(d, tag, warnings)
@@ -801,7 +811,7 @@ def render(d, tag, warnings, theme='sketch', cols=None, use_at=True):
     return svg
 
 
-def render_pair(d, warnings, theme='sketch', cols=None):
+def render_pair(d, warnings, theme='clean', cols=None):
     """(desktop svg, phone svg). The phone flow is one column in story order; a sequence is the same on both."""
     desk = render(d, 'desk', warnings, theme, cols, True)
     if d.get('type') == 'sequence':
@@ -830,7 +840,7 @@ def picture_html(d, title, theme, lead=''):
 *{{box-sizing:border-box}}
 body{{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}}
 main{{max-width:1040px;margin:0 auto;padding:28px 16px 40px}}
-h1{{font-size:22px;line-height:1.25;font-weight:650;margin:0}}.sketch h1{{font:400 27px/1.2 Hand,cursive}}
+h1{{font-size:22px;line-height:1.25;font-weight:650;margin:0}}.clean h1{{font-weight:400}}.sketch h1{{font:400 27px/1.2 Hand,cursive}}
 .lead{{color:var(--mut);margin:4px 0 16px;max-width:64ch}}
 .stage{{border:1px solid var(--line);border-radius:14px;background:var(--surf);--w:max(100%,min(var(--sw,100%),calc(100vw - 32px)));width:var(--w);margin-left:calc((100% - var(--w)) / 2)}}
 .canvas{{padding:14px 16px 12px;border-radius:13px}}
@@ -855,13 +865,13 @@ def main():
         if a.src.endswith('.json'):
             scene = json.loads(raw)
             src, look = scene['diagram'], scene.get('look', {})
-            theme, title, lead = a.theme or scene.get('theme', 'sketch'), a.title or scene.get('title', 'Diagram'), a.lead or scene.get('lead', '')
+            theme, title, lead = a.theme or scene.get('theme', 'clean'), a.title or scene.get('title', 'Diagram'), a.lead or scene.get('lead', '')
             if scene.get('legend'):
                 look = dict(look, legend=scene['legend'])
         else:
             fence = re.search(r'```mermaid\s*\n([\s\S]*?)```', raw)
             src, look = (fence.group(1) if fence else raw).strip(), json.load(open(a.look)) if a.look else {}
-            theme, title, lead = a.theme or 'sketch', a.title or os.path.splitext(os.path.basename(a.src))[0], a.lead
+            theme, title, lead = a.theme or 'clean', a.title or os.path.splitext(os.path.basename(a.src))[0], a.lead
         d = from_mermaid(src, look)
         d['title'] = title
         errs = validate_diagram(d)
