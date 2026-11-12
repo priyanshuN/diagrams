@@ -1,7 +1,7 @@
 {
   "name": "diagrams",
-  "description": "Flow and sequence diagrams: chat text, sketch or clean pictures, narrated walkthroughs, and sequence diagrams drawn from recorded runs.",
-  "version": "0.2.1",
+  "description": "Diagrams that explain: flow and sequence diagrams as chat text or pictures, narrated walkthroughs, sequence diagrams drawn from recorded runs, and interactive concept pages.",
+  "version": "0.3.0",
   "author": {
     "name": "priyanshuN",
     "url": "https://github.com/priyanshuN"
@@ -15,6 +15,8 @@
     "sequence-diagram",
     "walkthrough",
     "skills",
-    "trace"
+    "trace",
+    "concept",
+    "interactive"
   ]
 }

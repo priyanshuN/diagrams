@@ -503,7 +503,7 @@ def build_svg(scene, cols, use_at, tag, warnings):
     x1 = max(b[0] + b[2] for b in boxes) + 12; y1 = max(b[1] + b[3] for b in boxes) + 12
     head = (f'<svg class="dia {tag}" style="max-width:{(x1 - x0) * 1.15:.0f}px" viewBox="{x0:.0f} {y0:.0f} {x1 - x0:.0f} {y1 - y0:.0f}" role="img" aria-label="{e(scene.get("title", "diagram"))}">'
             f'<defs><marker id="arr-{tag}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
-            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>')
+            'orient="auto-start-reverse"><path d="M2,1.5 L9,5 L2,8.5" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>')
     return head + ''.join(groups + edges_out + node_out + labels) + '</svg>'
 
 
@@ -703,7 +703,7 @@ def seq_svg(d, tag, warnings):
     head = (f'<svg class="dia seq {tag}" style="{size}" viewBox="{x0:.0f} {y0:.0f} {x1 - x0:.0f} {y1 - y0:.0f}" '
             f'role="img" aria-label="{e(d.get("title", "sequence diagram"))}">'
             f'<defs><marker id="arr-{tag}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
-            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>')
+            'orient="auto-start-reverse"><path d="M2,1.5 L9,5 L2,8.5" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>')
     return head + ''.join(life + notes_out + msgs + out_parts + labels) + '</svg>'
 
 
@@ -787,7 +787,7 @@ FONT = os.path.join(NODE_MODULES, '@fontsource', 'architects-daughter', 'files',
 
 def diagram_css(theme):
     """Tokens, meaning colours and diagram styles, shared by pictures and the narrated page."""
-    css = open(os.path.join(SKILL_DIR, 'diagram.css')).read()
+    css = open(os.path.join(SKILL_DIR, 'tokens.css')).read() + open(os.path.join(SKILL_DIR, 'diagram.css')).read()
     if theme == 'sketch' and os.path.isfile(FONT):
         font = base64.b64encode(open(FONT, 'rb').read()).decode()
         css = f"@font-face{{font-family:Hand;src:url(data:font/woff2;base64,{font}) format('woff2');font-display:block}}\n" + css
@@ -842,8 +842,8 @@ body{{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system
 main{{max-width:1040px;margin:0 auto;padding:28px 16px 40px}}
 h1{{font-size:22px;line-height:1.25;font-weight:650;margin:0}}.clean h1{{font-weight:400}}.sketch h1{{font:400 27px/1.2 Hand,cursive}}
 .lead{{color:var(--mut);margin:4px 0 16px;max-width:64ch}}
-.stage{{border:1px solid var(--line);border-radius:14px;background:var(--surf);--w:max(100%,min(var(--sw,100%),calc(100vw - 32px)));width:var(--w);margin-left:calc((100% - var(--w)) / 2)}}
-.canvas{{padding:14px 16px 12px;border-radius:13px}}
+.stage{{border:1px solid var(--line);border-radius:12px;background:var(--surf);--w:max(100%,min(var(--sw,100%),calc(100vw - 32px)));width:var(--w);margin-left:calc((100% - var(--w)) / 2)}}
+.canvas{{padding:18px 18px 14px;border-radius:11px}}
 </style></head>
 <body class="{theme}"><main><h1>{e(title)}</h1><p class="lead">{e(lead)}</p>
 <div class="stage" style="--sw:{width}px"><div class="canvas">{desk}{phone}<div class="legend">{legend_html(d.get("legend", []))}</div></div></div>

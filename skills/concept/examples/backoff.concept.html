@@ -1,0 +1,55 @@
+<!--concept
+title: Retry backoff with and without jitter
+lead: Every client fails at time 0 and retries with a doubling wait. On the left each client waits the exact time. On the right each client waits a random part of that time. Compare how many retries reach the server in the same moment.
+-->
+<div class="controls">
+  <label>Clients <input type="range" id="clients" min="2" max="8" step="1" value="5"><span class="val" id="clientsVal">5</span></label>
+  <label>Retries <input type="range" id="retries" min="2" max="4" step="1" value="4"><span class="val" id="retriesVal">4</span></label>
+  <label>First wait <input type="range" id="base" min="100" max="800" step="100" value="200"><span class="val" id="baseVal">200 ms</span></label>
+  <button id="shuffle">Draw new random waits</button>
+</div>
+<div class="grid">
+  <section class="card" id="exact"></section>
+  <section class="card" id="jitter"></section>
+</div>
+<script>
+const { el, scale, random, bars, fmt, bind } = kit
+let clients = 5, retries = 4, base = 200, seed = 7
+
+function lanes(card, title, formula, jitter) {
+  const total = base * (2 ** retries - 1)                 // the last retry without jitter
+  const SLICES = 4 * (2 ** retries - 1)                   // one slice is a quarter of the first wait
+  const rnd = random(seed), x = scale(0, total, 34, 306), h = 34 + clients * 22 + 30
+  const load = Array(SLICES).fill(0)
+  let s = `<svg class="pic" viewBox="0 0 340 ${h}" style="max-width:430px" role="img" aria-label="${title}: one row per client, one dot per retry, time runs left to right">`
+  s += `<line class="axis" x1="34" y1="${h - 26}" x2="306" y2="${h - 26}"/><text class="start" x="34" y="${h - 12}">0 ms</text><text class="end" x="306" y="${h - 12}">${fmt(total)} ms</text>`
+  for (let c = 0; c < clients; c++) {
+    const y = 26 + c * 22
+    s += `<line class="guide" x1="34" y1="${y}" x2="306" y2="${y}"/><text x="16" y="${y}">${c + 1}</text>`
+    for (let k = 0, t = 0; k < retries; k++) {
+      const wait = base * 2 ** k
+      t += jitter ? wait * rnd() : wait
+      load[Math.min(SLICES - 1, Math.floor(t / total * SLICES))]++
+      s += `<circle class="mark${jitter ? '' : ' c-rose'}" cx="${x(t).toFixed(1)}" cy="${y}" r="4"/>`
+    }
+  }
+  s += '</svg>'
+  const peak = Math.max(...load), slice = fmt(total / SLICES)
+  const verdict = peak >= clients ? `<div class="verdict bad">All ${clients} clients retry in the same ${slice} ms slice. The server gets the full spike again.</div>`
+    : peak > Math.ceil(clients / 2) ? `<div class="verdict warn">Up to ${peak} of ${clients} clients still retry in the same ${slice} ms slice.</div>`
+    : `<div class="verdict good">At most ${peak} of ${clients} clients retry in the same ${slice} ms slice.</div>`
+  card.innerHTML = `<h2>${title}</h2><div class="formula">${formula}</div>${s}${verdict}` + bars(load, { peak: true, max: clients }) +
+    `<div class="cap">Retries that reach the server in each ${slice} ms slice</div>`
+}
+
+function draw() {
+  el('clientsVal').textContent = clients; el('retriesVal').textContent = retries; el('baseVal').textContent = `${fmt(base)} ms`
+  lanes(el('exact'), 'Exact wait', `wait = ${base} ms × 2^k`, false)
+  lanes(el('jitter'), 'Full jitter', `wait = random(0, ${base} ms × 2^k)`, true)
+}
+bind(['clients'], c => { clients = +c.value; draw() })
+bind(['retries'], c => { retries = +c.value; draw() })
+bind(['base'], c => { base = +c.value; draw() })
+bind(['shuffle'], () => { seed++; draw() })
+draw()
+</script>

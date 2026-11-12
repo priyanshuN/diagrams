@@ -1,6 +1,6 @@
 ---
 name: flow
-description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits). A chat diagram of about 12 boxes or fewer is drawn by hand and checked with fd --lint; a larger one, or one that also needs a picture page or walkthrough, is written in Mermaid and rendered as Unicode box art (fd) or a clean/sketch-style picture page (pic). Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid).
+description: Draw a flow diagram (what talks to what) or a sequence diagram (who calls whom, in what order, who waits). A chat diagram of about 12 boxes or fewer is drawn by hand and checked with fd --lint; a larger one, or one that also needs a picture page or walkthrough, is written in Mermaid and rendered as Unicode box art (fd) or a picture page (pic: crisp by default, hand-drawn sketch as an option). Use when a reply needs a diagram bigger than a few boxes, when the user asks for a flow or sequence diagram, or before building a narrated walkthrough (diagrams:walkthrough reads the same Mermaid). To explain how an idea, an algorithm or a number behaves (not what talks to what), use diagrams:concept.
 ---
 
 # Flow and sequence diagrams
@@ -31,6 +31,9 @@ Mermaid ─┬─► fd file.mmd ─────────► Unicode text in 
 | What are the parts, and what flows between them? | flow | `graph LR` (a chain) or `graph TD` (a tree) |
 | In what order do calls happen? Who waits for whom? When does the reply go back? | sequence | `sequenceDiagram` |
 | Both (a new system, an incident) | flow first, then the sequence of the one path that matters | both |
+| How does this idea behave? Why this number? What happens if I change it? | not a flow: an interactive concept page | use the **diagrams:concept** skill |
+
+Boxes and arrows cannot show why a number or an algorithm works (a hash spread, a stride, a backoff curve). When the question is about behaviour, do not force it into a flow.
 
 A sequence shows what a flow hides. Example: at checkout the shop tells the customer "processing" *before* the payment provider confirms; the confirmation arrives later by webhook. A flow diagram cannot show that ordering.
 
@@ -82,7 +85,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 "${CLAUDE_SKILL_DIR}/pic" diagram.mmd --look look.json --title "Checkout" -o out.html
 ```
 
-- **Clean is the default**: crisp lines and one text weight, with colour for emphasis. Use it for anything read for its values: real runs, comparisons, dense diagrams. `--theme sketch` gives hand-drawn boxes and arrows (rough.js) on graph paper, with the Architects Daughter font, for an early design that should look like a draft.
+- **Clean is the default**: thin crisp lines, open arrowheads and one text weight, with colour for emphasis; the same look as the concept pages. Use it for anything read for its values: real runs, comparisons, dense diagrams. `--theme sketch` gives hand-drawn boxes and arrows (rough.js) on graph paper, with the Architects Daughter font, for an early design that should look like a draft.
 - Colour means the same in both themes. The fill says who runs a box; the outline and labels stay dark ink so text always wins.
 - Arrows are routed by libavoid. They never cross a box, and each one gets its own attachment point.
 - Prints one JSON line `{"ok", "out", "warnings"}`. Read the warnings. "Wider than tall" means: give `at` positions in the look, or use `graph TD`.
@@ -114,5 +117,6 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 ## Setup and limits
 
 - Needs Node 18+ and `uv`: `pic` runs `diagram.py` on uv's Python 3.12 (plain `python3` 3.9+ without uv). Libraries come from the plugin's `package.json`; Claude Code installs them on plugin install and update. In a loose copy, run `npm ci` where `package.json` is: beautiful-mermaid (MIT) for text and parsing, libavoid-js (LGPL) for arrows, roughjs (MIT) for the sketch, and @fontsource/architects-daughter (OFL). All run at build time; nothing loads from a CDN.
-- If roughjs or libavoid is missing, the picture falls back (clean theme, simple curves) with a warning.
+- If roughjs is missing, a sketch picture falls back to clean with a warning. If libavoid is missing, arrows fall back to simple curves with a warning.
+- The page greys, the accent and the meaning colours live in `tokens.css`. The concept pages read the same file, so change a colour there, not in `diagram.css`.
 - The examples are in `examples/`: `checkout.flow.mmd` (+ `checkout.look.json`), `checkout.seq.mmd`, and `shop.hand.txt` (a hand-drawn diagram that passes `--lint`).
