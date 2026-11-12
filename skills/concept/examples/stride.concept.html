@@ -1,0 +1,89 @@
+<!--concept
+title: Golden stride on a ring of Kafka partitions
+lead: Each message takes the next Redis counter value n. The left ring steps one partition at a time. The right ring jumps by the stride. Send a burst and compare which consumer gets the work.
+-->
+<div class="controls">
+  <label>Partitions <input type="range" id="parts" min="8" max="24" step="1" value="12"><span class="val" id="partsVal">12</span></label>
+  <label>Stride <input type="range" id="stride" min="1" max="11" step="1" value="7"><span class="val" id="strideVal">7</span></label>
+  <button id="golden">Use golden stride</button>
+</div>
+<div class="controls">
+  <button id="one">Send 1 message</button>
+  <button id="four">Send burst of 4</button>
+  <button id="play">Play</button>
+  <button id="reset">Reset</button>
+  <span class="row">Redis counter n = <b id="count">4</b></span>
+</div>
+<div class="grid">
+  <section class="card" id="plain"></section>
+  <section class="card" id="jump"></section>
+</div>
+<script>
+const { el, polar, arc, gcd, arrow, defs, bars, bind, play } = kit
+// Three consumers own contiguous partition ranges, as Kafka's range assignment gives them.
+const CONSUMERS = [['A', 'sky'], ['B', 'amber'], ['C', 'slate']]
+let N = 12, S = 7, n = 4
+
+// The whole number nearest to 0.618 x N that shares no factor with N.
+function golden(N) {
+  let best = 1, dist = Infinity
+  for (let s = 2; s < N - 1; s++) {
+    const d = Math.abs(s - N * 0.6180339887)
+    if (gcd(s, N) === 1 && d < dist) { dist = d; best = s }
+  }
+  return best
+}
+function ranges() {
+  const per = Math.floor(N / 3), extra = N % 3, out = []
+  for (let c = 0, start = 0; c < 3; c++) { const size = per + (c < extra ? 1 : 0); out.push([start, start + size - 1]); start += size }
+  return out
+}
+const owner = p => ranges().findIndex(([, last]) => p <= last)
+
+function ring(card, title, formula, stride) {
+  const step = 360 / N, rad = Math.min(15, Math.floor(Math.PI * 108 / N) - 3), k = Math.min(4, n)
+  const counts = Array(N).fill(0), last = []
+  for (let i = 0; i < n; i++) counts[i * stride % N]++
+  for (let i = n - k; i < n; i++) last.push(i * stride % N)
+  let s = `<svg class="pic" viewBox="0 0 320 320" style="max-width:340px" role="img" aria-label="${title}: a ring of ${N} partitions with the last messages drawn as arrows">${defs()}`
+  ranges().forEach(([first, lastP], c) => {
+    const d0 = first * step - step / 2 + 3, d1 = lastP * step + step / 2 - 3, [lx, ly] = polar(160, 160, 149, (d0 + d1) / 2)
+    s += `<path class="band c-${CONSUMERS[c][1]}" d="${arc(160, 160, 134, d0, d1)}"/><text x="${lx}" y="${ly}">${CONSUMERS[c][0]}</text>`
+  })
+  for (let i = 1; i < last.length; i++) {
+    s += arrow(polar(160, 160, 108, last[i - 1] * step), polar(160, 160, 108, last[i] * step), { pad: rad + 3, opacity: (0.35 + 0.65 * i / (last.length - 1)).toFixed(2) })
+  }
+  for (let p = 0; p < N; p++) {
+    const [x, y] = polar(160, 160, 108, p * step), on = last.includes(p), now = last[last.length - 1] === p
+    s += `<circle class="item${on ? ' on' : ''}${now ? ' now' : ''}" cx="${x}" cy="${y}" r="${rad}"/><text${on ? ' class="on"' : ''} x="${x}" y="${y}">${p}</text>`
+  }
+  s += '</svg>'
+  const load = [0, 0, 0]
+  last.forEach(p => load[owner(p)]++)
+  const hit = load.filter(v => v > 0).length, shared = gcd(stride, N)
+  const verdict = shared > 1 ? `<div class="verdict bad">Stride ${stride} and ${N} share the factor ${shared}. Only ${N / shared} of ${N} partitions ever get a message.</div>`
+    : k < 2 ? '<div class="verdict quiet">Send a burst to compare.</div>'
+    : hit === 1 ? '<div class="verdict warn">One consumer takes the whole burst.</div>'
+    : `<div class="verdict good">The burst is shared by ${hit} consumers.</div>`
+  card.innerHTML = `<h2>${title}</h2><div class="formula">${formula}</div>${s}` +
+    `<div class="row">Last ${k} messages went to partitions <b>${last.length ? last.join(' → ') : 'none yet'}</b></div>` +
+    `<div class="row">${CONSUMERS.map(([name, colour], c) => `<span class="chip c-${colour}"><span class="dot"></span>Consumer ${name}: ${load[c]}</span>`).join('')}</div>` +
+    verdict + bars(counts, { flagZero: n >= N }) +
+    `<div class="cap">Messages per partition, 0 to ${N - 1}</div>`
+}
+
+function draw() {
+  const g = golden(N)
+  el('partsVal').textContent = N; el('strideVal').textContent = S; el('count').textContent = n
+  ring(el('plain'), 'Plain counter, stride 1', `partition = n % ${N}`, 1)
+  ring(el('jump'), `Stride ${S}` + (S === g ? ` (golden: 0.618 × ${N} ≈ ${g})` : ''), `partition = (n × ${S}) % ${N}`, S)
+}
+bind(['parts'], c => { N = +c.value; el('stride').max = N - 1; S = golden(N); el('stride').value = S; n = 4; draw() })
+bind(['stride'], c => { S = +c.value; draw() })
+bind(['golden'], () => { S = golden(N); el('stride').value = S; draw() })
+bind(['one'], () => { n++; draw() })
+bind(['four'], () => { n += 4; draw() })
+bind(['reset'], () => { player.stop(); n = 0; draw() })
+const player = play('play', () => { n++; draw() })
+draw()
+</script>

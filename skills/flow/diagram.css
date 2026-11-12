@@ -1,37 +1,27 @@
-:root{--bg:#f5f7f6;--ink:#16201b;--mut:#5d6a63;--faint:#8a958f;--surf:#fff;--line:#d5ddd8;--acc:#0d7a54;--wash:#dbf0e5;--done:#edf2ef;--onacc:#fff;--bad:#b9461a;--badwash:#fbe6dc;--grp:#f0f4f2;--bar:#f8faf9}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1311;--ink:#e5ebe8;--mut:#98a59f;--faint:#6c7a73;--surf:#151c19;--line:#29342f;--acc:#3dcc90;--wash:#133426;--done:#1c2521;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--grp:#121916;--bar:#121916}}
-:root[data-theme=dark]{--bg:#0e1311;--ink:#e5ebe8;--mut:#98a59f;--faint:#6c7a73;--surf:#151c19;--line:#29342f;--acc:#3dcc90;--wash:#133426;--done:#1c2521;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--grp:#121916;--bar:#121916}
-/* meaning colours: who runs a box, how a branch ends */
-.c-emerald{--c:#0d7a54;--cw:#dbf0e5}.c-sky{--c:#0369a1;--cw:#dcf0fb}.c-amber{--c:#9a5a06;--cw:#fbeed2}
-.c-slate{--c:#4b5869;--cw:#e8ecf1}.c-rose{--c:#be123c;--cw:#fde3e8}.c-teal{--c:#0f766e;--cw:#d4f1ec}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .c-emerald{--c:#3dcc90;--cw:#133426}:root:not([data-theme=light]) .c-sky{--c:#56bdf0;--cw:#0f2b3c}
- :root:not([data-theme=light]) .c-amber{--c:#f0a63a;--cw:#3a2a10}:root:not([data-theme=light]) .c-slate{--c:#a3b0bf;--cw:#232b34}
- :root:not([data-theme=light]) .c-rose{--c:#f47a8f;--cw:#3b1820}:root:not([data-theme=light]) .c-teal{--c:#3cc6b4;--cw:#0f3330}}
-:root[data-theme=dark] .c-emerald{--c:#3dcc90;--cw:#133426}:root[data-theme=dark] .c-sky{--c:#56bdf0;--cw:#0f2b3c}:root[data-theme=dark] .c-amber{--c:#f0a63a;--cw:#3a2a10}
 :root[data-theme=dark] .c-slate{--c:#a3b0bf;--cw:#232b34}:root[data-theme=dark] .c-rose{--c:#f47a8f;--cw:#3b1820}:root[data-theme=dark] .c-teal{--c:#3cc6b4;--cw:#0f3330}
 svg.dia{width:100%;height:auto;display:block;margin:0 auto}svg.phone{display:none}
 @media (max-width:640px){svg.desk{display:none}svg.phone{display:block}}
-.grp{fill:var(--grp);stroke:var(--line);stroke-dasharray:4 4}
-.grp[class*=" c-"]{fill:color-mix(in srgb,var(--cw) 40%,var(--surf));stroke:color-mix(in srgb,var(--c) 45%,var(--line))}
+.grp{fill:var(--grp);stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+.grp[class*=" c-"]{fill:color-mix(in srgb,var(--cw) 28%,var(--surf));stroke:color-mix(in srgb,var(--c) 40%,var(--line))}
 .glbl[class*=" c-"]{fill:var(--c)}
 .glbl{fill:var(--mut);font-size:12px;font-weight:600;paint-order:stroke;stroke:var(--grp);stroke-width:5px;stroke-linejoin:round}
-.node .shape{fill:var(--surf);stroke:color-mix(in srgb,var(--c,var(--line)) 38%,var(--line));stroke-width:1.5;transition:fill .3s,stroke .3s}
+.node .shape{fill:var(--surf);stroke:color-mix(in srgb,var(--c,var(--line)) 50%,var(--line));stroke-width:1;transition:fill .3s,stroke .3s}
 .node.kind-external .shape{stroke-dasharray:5 4}
 .node text{text-anchor:middle;fill:var(--mut);transition:fill .3s}.lbl{font-weight:600;font-size:15px}.sub{font-size:12px}
-.node.done .shape{fill:color-mix(in srgb,var(--cw,var(--done)) 55%,var(--surf))}.node.done text{fill:var(--ink)}.node.done .sub{fill:var(--mut)}
-.node.on .shape{fill:var(--cw,var(--wash));stroke:var(--c,var(--acc));stroke-width:2.5}.node.on text{fill:var(--ink)}.node.on .sub{fill:var(--mut)}
-.edge{fill:none;stroke:var(--line);stroke-width:2;transition:stroke .3s}.edge.k-async{stroke-dasharray:2 5}.edge.done{stroke:var(--faint)}
-.edge.on{stroke:var(--c,var(--acc));stroke-width:3;stroke-dasharray:8 6;animation:flow .6s linear infinite}
-.elbl{font-size:11.5px;fill:var(--mut);paint-order:stroke;stroke:var(--surf);stroke-width:4px;stroke-linejoin:round}.elbl.on{fill:var(--c,var(--acc));font-weight:600}.elbl.tone{fill:var(--c);font-weight:600}.edge.tone{stroke:color-mix(in srgb,var(--c) 45%,var(--line))}.edge.tone.on{stroke:var(--c)}
+.node.done .shape{fill:color-mix(in srgb,var(--cw,var(--done)) 42%,var(--surf))}.node.done text{fill:var(--ink)}.node.done .sub{fill:var(--mut)}
+.node.on .shape{fill:var(--cw,var(--wash));stroke:var(--c,var(--acc));stroke-width:2}.node.on text{fill:var(--ink)}.node.on .sub{fill:var(--mut)}
+.edge{fill:none;stroke:var(--line);stroke-width:1.4;stroke-linecap:round;transition:stroke .3s}.edge.k-async{stroke-dasharray:1.5 5}.edge.done{stroke:var(--faint)}
+.edge.on{stroke:var(--c,var(--acc));stroke-width:2.4;stroke-dasharray:8 6;animation:flow .6s linear infinite}
+.elbl{font-size:12px;fill:var(--mut);paint-order:stroke;stroke:var(--surf);stroke-width:4px;stroke-linejoin:round}.elbl.on{fill:var(--c,var(--acc));font-weight:600}.elbl.tone{fill:var(--c);font-weight:600}.edge.tone{stroke:color-mix(in srgb,var(--c) 45%,var(--line))}.edge.tone.on{stroke:var(--c)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;padding:2px 4px 0;font-size:12.5px;color:var(--mut)}.legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i{width:10px;height:10px;border-radius:3px;background:var(--cw);border:1.5px solid var(--c)}
+.legend i{width:10px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--cw) 60%,var(--surf));border:1px solid color-mix(in srgb,var(--c) 60%,var(--line))}
 @keyframes flow{to{stroke-dashoffset:-14}}
 .phone .edge.skip:not(.on):not(.done),.phone .elbl.skip:not(.on){opacity:0}
 /* sequence diagrams */
-.life{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 5}
+.life{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:3 5}
 .edge.k-reply{stroke-dasharray:6 4}
 .mnum{font-weight:700;fill:var(--mut)}
-.note .nshape{fill:color-mix(in srgb,#f5c542 22%,var(--surf));stroke:color-mix(in srgb,#b8860b 40%,var(--line));stroke-width:1.2}
+.note .nshape{fill:color-mix(in srgb,#f5c542 22%,var(--surf));stroke:color-mix(in srgb,#b8860b 40%,var(--line));stroke-width:1}
 .ntxt{font-size:12.5px;fill:var(--ink);text-anchor:middle}
 
 /* sketch theme: hand-drawn strokes on graph paper. The clean shapes stay (invisible) for scripts. */
@@ -54,7 +44,7 @@ svg.dia{width:100%;height:auto;display:block;margin:0 auto}svg.phone{display:non
 .sketch .node.kind-external .sko{stroke-dasharray:7 5}
 .sketch .node text{fill:var(--skink)}.sketch .node.on text,.sketch .node.done text{fill:var(--skink)}
 .sketch .lbl{font-weight:400;font-size:17px}.sketch .sub{font-size:13px}.sketch .node .sub,.sketch .node.on .sub,.sketch .node.done .sub{fill:var(--skink)}
-.sketch .edge{stroke:transparent}.sketch .edge.on{stroke:var(--c,var(--acc));opacity:.85}
+.sketch .edge{stroke:transparent;stroke-width:2}.sketch .edge.on{stroke:var(--c,var(--acc));opacity:.85}
 .sketch .ske .sko{stroke:color-mix(in srgb,var(--skink) 70%,var(--paper));stroke-width:1.4}
 .sketch .edge.k-async + .ske .skb .sko{stroke-dasharray:5 6}.sketch .edge.k-reply + .ske .skb .sko{stroke-dasharray:8 5}
 .sketch .edge.tone + .ske .sko{stroke:color-mix(in srgb,var(--c) 75%,var(--paper))}

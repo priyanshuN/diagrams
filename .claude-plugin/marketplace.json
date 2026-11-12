@@ -5,15 +5,22 @@
     "url": "https://github.com/priyanshuN"
   },
   "metadata": {
-    "description": "The diagrams plugin: flow and sequence diagrams for chat, pictures and narrated walkthroughs."
+    "description": "The diagrams plugin: flow and sequence diagrams for chat, pictures, narrated walkthroughs and interactive concept pages."
   },
   "plugins": [
     {
       "name": "diagrams",
       "source": "./",
-      "description": "Mermaid to Unicode text for chat, to sketch or clean pictures, and to narrated walkthroughs with voice, cues and a recall quiz.",
+      "description": "Mermaid to Unicode text for chat, to clean or sketch pictures, and to narrated walkthroughs with voice, cues and a recall quiz. Plus interactive concept pages that show how an idea behaves.",
       "homepage": "https://github.com/priyanshuN/diagrams#readme",
-      "keywords": ["diagrams", "mermaid", "sequence-diagram", "walkthrough", "skills"],
+      "keywords": [
+        "diagrams",
+        "mermaid",
+        "sequence-diagram",
+        "walkthrough",
+        "concept",
+        "skills"
+      ],
       "author": {
         "name": "priyanshuN",
         "url": "https://github.com/priyanshuN"

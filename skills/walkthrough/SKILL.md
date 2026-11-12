@@ -1,6 +1,6 @@
 ---
 name: walkthrough
-description: Build a narrated, step-synced diagram walkthrough (local Kokoro voice + animated SVG, one self-contained HTML page with a recall quiz, predict pauses and source links) for a long mechanism the user wants to learn once — onboarding, a pipeline, a request path. Use when the user asks for a walkthrough, a narrated explainer or a "video", or accepts an offer of one. Never build one unasked; for short flows a text diagram in the reply is enough.
+description: Build a narrated, step-synced diagram walkthrough (local Kokoro voice + animated SVG, one self-contained HTML page with a recall quiz, predict pauses and source links) for a long mechanism the user wants to learn once — onboarding, a pipeline, a request path. Use when the user asks for a walkthrough, a narrated explainer or a "video", or accepts an offer of one. Never build one unasked; for short flows a text diagram in the reply is enough. A walkthrough narrates a flow or a sequence (boxes and arrows); to explain how an idea, an algorithm or a number behaves, use diagrams:concept instead.
 ---
 
 # Narrated walkthrough

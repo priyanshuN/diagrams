@@ -1,0 +1,49 @@
+/* The concept page look. Colours come only from tokens.css (the same tokens the flow pictures use), so light and dark both work. */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:1040px;margin:0 auto;padding:28px 16px 48px}
+.top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+h1{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:-.01em;margin:0}
+.lead{color:var(--mut);margin:4px 0 18px;max-width:68ch}
+button,select{font:inherit;font-size:14px;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover,select:hover{background:var(--done)}button:active{transform:scale(.98)}
+button.theme{font-size:12.5px;padding:4px 10px;color:var(--mut);flex:none}
+input[type=range]{accent-color:var(--acc);width:140px;margin:0}
+input[type=checkbox]{accent-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* controls: one row per kind of action; a label wraps its slider and its live value */
+.controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin:0 0 12px}
+.controls label{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--mut)}
+.val{font-weight:600;color:var(--ink);min-width:2ch;font-variant-numeric:tabular-nums}
+/* cards: one per method, side by side when the page is wide enough */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;margin-top:4px}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.card h2{font-size:14px;line-height:1.4;font-weight:600;margin:0}
+.formula{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);margin-bottom:6px}
+.row{font-size:13.5px;color:var(--mut);margin-top:6px}.controls .row{margin:0}.row b{color:var(--ink);font-weight:560;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-right:12px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--acc));flex:none}
+/* the one-line result under a picture */
+.verdict{font-size:14px;line-height:1.45;font-weight:560;margin-top:8px;min-height:2.9em}
+.good{color:var(--acc)}.warn{color:var(--warn)}.bad{color:var(--bad)}.quiet{color:var(--mut);font-weight:400}
+.bars{display:flex;align-items:flex-end;gap:2px;height:44px;margin-top:10px}
+.bars i{flex:1;background:var(--acc);border-radius:2px 2px 0 0;min-height:1px}.bars i.zero{background:var(--bad);min-height:2px}.bars i.peak{background:var(--bad)}
+.cap{font-size:12px;color:var(--mut);margin-top:4px}
+/* pictures: thin lines, small text, one accent */
+svg.pic{display:block;width:100%;height:auto;margin:4px auto 0;overflow:visible}
+svg.pic text{font-size:12px;fill:var(--mut);text-anchor:middle;dominant-baseline:central}
+svg.pic text.start{text-anchor:start}svg.pic text.end{text-anchor:end}
+svg.pic text.t{font-size:13px;fill:var(--ink)}svg.pic text.th{font-size:13px;font-weight:600;fill:var(--ink)}
+svg.pic text.on{fill:var(--acc);font-weight:600}
+svg.pic .item{fill:var(--surf);stroke:color-mix(in srgb,var(--mut) 45%,var(--line));stroke-width:1}
+svg.pic .item.on{fill:var(--wash);stroke:var(--acc);stroke-width:1.2}svg.pic .item.now{stroke-width:2.2}
+svg.pic .item[class*=" c-"]{fill:var(--cw);stroke:var(--c)}
+svg.pic .item.full{fill:var(--c,var(--acc));stroke:var(--c,var(--acc))}
+svg.pic text[class*="c-"]{fill:var(--c)}
+svg.pic .mark{fill:var(--c,var(--acc));stroke:none}
+svg.pic .link{fill:none;stroke:var(--c,var(--acc));stroke-width:1.3;stroke-linecap:round}
+svg.pic .band{fill:none;stroke:var(--c,var(--line));stroke-width:5;stroke-linecap:round}
+svg.pic .axis{fill:none;stroke:var(--mut);stroke-width:1}
+svg.pic .guide{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+@media (max-width:520px){main{padding:20px 12px 40px}input[type=range]{width:120px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -1,0 +1,12 @@
+/* Shared tokens: the page greys, the accent, and the meaning colours. Pictures (flow), narrated pages (walkthrough) and concept pages all start from this file. */
+:root{--bg:#f6f6f3;--ink:#1b1c1a;--mut:#5c5e5a;--faint:#8b8d88;--surf:#fff;--line:#dfe0db;--acc:#0d7a54;--wash:#dbf0e5;--done:#eff0ec;--onacc:#fff;--bad:#b9461a;--badwash:#fbe6dc;--warn:#9a5a06;--warnwash:#fbeed2;--grp:#f3f4f0;--bar:#fafaf8}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101211;--ink:#e8eae7;--mut:#9da19c;--faint:#6f7470;--surf:#171a18;--line:#2b2f2c;--acc:#3dcc90;--wash:#133426;--done:#1e2220;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--warn:#f0a63a;--warnwash:#3a2a10;--grp:#141716;--bar:#141716}}
+:root[data-theme=dark]{--bg:#101211;--ink:#e8eae7;--mut:#9da19c;--faint:#6f7470;--surf:#171a18;--line:#2b2f2c;--acc:#3dcc90;--wash:#133426;--done:#1e2220;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--warn:#f0a63a;--warnwash:#3a2a10;--grp:#141716;--bar:#141716}
+/* meaning colours: who runs a box, how a branch ends. --c is the strong colour, --cw its wash. */
+.c-emerald{--c:#0d7a54;--cw:#dbf0e5}.c-sky{--c:#0369a1;--cw:#dcf0fb}.c-amber{--c:#9a5a06;--cw:#fbeed2}
+.c-slate{--c:#4b5869;--cw:#e8ecf1}.c-rose{--c:#be123c;--cw:#fde3e8}.c-teal{--c:#0f766e;--cw:#d4f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .c-emerald{--c:#3dcc90;--cw:#133426}:root:not([data-theme=light]) .c-sky{--c:#56bdf0;--cw:#0f2b3c}
+ :root:not([data-theme=light]) .c-amber{--c:#f0a63a;--cw:#3a2a10}:root:not([data-theme=light]) .c-slate{--c:#a3b0bf;--cw:#232b34}
+ :root:not([data-theme=light]) .c-rose{--c:#f47a8f;--cw:#3b1820}:root:not([data-theme=light]) .c-teal{--c:#3cc6b4;--cw:#0f3330}}
+:root[data-theme=dark] .c-emerald{--c:#3dcc90;--cw:#133426}:root[data-theme=dark] .c-sky{--c:#56bdf0;--cw:#0f2b3c}:root[data-theme=dark] .c-amber{--c:#f0a63a;--cw:#3a2a10}
+:root[data-theme=dark] .c-slate{--c:#a3b0bf;--cw:#232b34}:root[data-theme=dark] .c-rose{--c:#f47a8f;--cw:#3b1820}:root[data-theme=dark] .c-teal{--c:#3cc6b4;--cw:#0f3330}

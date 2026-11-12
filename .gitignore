@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 __pycache__/
 skills/flow/examples/*.html
+skills/concept/examples/*.html
+!skills/concept/examples/*.concept.html
