@@ -2,7 +2,7 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
-## Unreleased
+## 0.3.0 (2026-11-12)
 
 - New skill `concept`: an interactive page that shows how an idea behaves (an algorithm, a number, a policy). It has no picture types: the skill gives rules, a page shell, drawing helpers (`kit`), a build (`cx`) and a page self-test (`window.__cx.selftest()`), and Claude draws the shape the idea has. Two examples: a golden-ratio stride on a ring of Kafka partitions, and retry backoff with jitter on a time axis.
 - Clean theme: thinner lines (1 to 1.4 px), open arrowheads, lighter fills and 12 px arrow labels, so flow pictures, walkthroughs and concept pages share one look. The text weight rule of 0.2.0 stays.
