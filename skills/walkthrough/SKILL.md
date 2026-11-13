@@ -1,11 +1,16 @@
 ---
 name: walkthrough
-description: Build a narrated, step-synced diagram walkthrough (local Kokoro voice + animated SVG, one self-contained HTML page with a recall quiz, predict pauses and source links) for a long mechanism the user wants to learn once — onboarding, a pipeline, a request path. Use when the user asks for a walkthrough, a narrated explainer or a "video", or accepts an offer of one. Never build one unasked; for short flows a text diagram in the reply is enough. A walkthrough narrates a flow or a sequence (boxes and arrows); to explain how an idea, an algorithm or a number behaves, use diagrams:concept instead.
+description: Build a narrated, step-synced diagram walkthrough (local Kokoro voice + animated SVG with a camera that follows the voice, one self-contained HTML page with a recall quiz, predict pauses and source links) for a long mechanism the user wants to learn once — onboarding, a pipeline, a request path. Use when the user asks for a walkthrough, a narrated explainer or a "video", or accepts an offer of one. Never build one unasked; for short flows a text diagram in the reply is enough. A walkthrough narrates a flow or a sequence (boxes and arrows); to explain how an idea, an algorithm or a number behaves, use diagrams:concept instead.
 ---
 
 # Narrated walkthrough
 
-The "video" is an HTML page, not an MP4. It beats a video in four ways:
+The "video" is an HTML page, not an MP4. It is directed like a film:
+- **The camera follows the voice.** The frame moves to the boxes a step names, and pulls back for the overview and the recap. A box or arrow appears when the voice first names it.
+- **Captions light word by word**, and a box's name in the caption takes the box's colour.
+- **Boxes show what they hold.** A box's second line changes when the data lands in it.
+
+It also beats a video in four ways:
 - **Arrows light up on the spoken word.** A cue lights the node or arrow when the voice says the matching word, not just at the start of the step.
 - **Predict pauses.** The page stops before a step and asks what happens next.
 - **"Test me" quiz.** It hides the labels and asks the viewer to click where each step happens.
@@ -36,11 +41,16 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
   "look": {"customer": {"kind": "external", "color": "slate", "at": [0, 0]}, "provider": {"color": "sky"}},
   "legend": [{"color": "slate", "label": "Outside your system"}],
   "steps": [
-    {"caption": "The shop saves a pending order, then asks the payment provider to charge the card.",
-     "focus": ["shop"], "edges": [["customer", "shop"]],
-     "cues": [{"at": "charge the card", "focus": ["pay"], "edges": [["shop", "pay"]]}],
+    {"title": "The shop asks for the charge",
+     "caption": "The shop saves a pending order, then asks the payment provider to charge the card.",
+     "focus": ["shop"], "edges": [["customer", "shop"]], "state": {"shop": "order: pending"},
+     "cues": [{"at": "charge the card", "focus": ["pay"], "edges": [["shop", "pay"]], "state": {"pay": "charging card"}}],
      "ask": {"q": "The card is charged. How does the shop find out?", "a": "The provider sends a signed webhook."},
      "src": "src/checkout/create-order.js:42"}
+  ],
+  "recap": [
+    {"text": "The shop saves the order before it charges the card.", "focus": ["shop"]},
+    {"text": "A signed webhook, not the browser, marks the order paid.", "focus": ["pay", "shop"]}
   ]
 }
 ```
@@ -52,18 +62,31 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 - **Flow:** give `at` positions in the look whenever the flow branches, loops back or skips a node. Without them, nodes are placed in layers, which can render long and small. The phone layout ignores `at` and stacks nodes in the order the narration first lights them.
 - Give a decision's two outcomes different sides: one straight down, one straight right (for example `decide` at [2,1], `orders` at [3,1], `retry` at [2,2]). If the build warns that two arrows "run side by side", move a box with `at`.
 - Draw the direction the *data* moves. If the worker reads a file from S3, the arrow is S3 → worker, not worker → S3. Label most arrows with the verb that travels them.
-- **Sequence:** use it when the order matters, or who waits for whom ("the customer sees processing before the payment is confirmed"). Steps light messages by number with `"msgs": [3]` instead of `"edges"`. Participants are the `focus` ids. On a phone the sequence keeps readable text and scrolls sideways, following the lit message.
+- **Sequence:** use it when the order matters, or who waits for whom ("the customer sees processing before the payment is confirmed"). Steps light messages by number with `"msgs": [3]` instead of `"edges"`. Participants are the `focus` ids. On a phone the camera frames the lit message; with the camera off, the sequence keeps readable text and scrolls sideways, following the lit message.
 - The older format (`nodes`, `edges`, `groups` written as JSON) still builds. Do not mix it with `diagram`.
 
 **Steps**
-- Use 5–9 steps. Each `caption` is one or two short sentences, under about 40 spoken words.
+- Use 5–9 steps. Each `caption` is one or two short sentences, under about 40 spoken words. The voice reads it, and the page lights it word by word.
+- `title` is the step's headline: 8 words or fewer, the one thing to remember from the step ("SNS tells the API"). It shows above the caption and in the step list. Give every step a title, or none.
 - `say` is optional. By default the voice reads the caption after the speech rules and the lexicon (section 2). Write `say` only when the spoken wording must differ.
 - `focus` and `edges` (flow) or `msgs` (sequence) light the step from its first word.
 - `cues` relight the diagram when the voice reaches the `at` phrase: one or more consecutive words of the spoken line, matched in order. Use a cue when one step crosses several nodes, so a node is not lit for 10+ seconds while the narration moves on.
 - `item` is the thing travelling through the flow, as it looks *at this moment*: `{"name": "Charge", "fields": {"status": "pending"}}`. It shows in a card beside the caption, coloured like the box it sits in, and carries forward until a later step or cue replaces it. Use real field names and values from the code or data, never invented ones. Mask personal values (card digits, addresses) with `…`. Set `item` on cues too, so the card changes on the spoken word ("parses" → the parsed payload).
+- `state` is what a box holds from this moment: `{"api": "job: processing"}`. It replaces the box's second line (30 characters or fewer, and it must fit the box) until a later step or cue replaces it. Set it on the box where the data lands: when a lit arrow ends at that box, the line changes as the pill arrives. Use real values from the code or data, as for `item`. Flows only; a decision has no second line.
 - `carry` (18 characters or fewer) labels the pill that rides each lit arrow for about 1.4 s after the step or cue starts ("order", "charge", "webhook", "yes"). Without it the pill shows the item's name.
 - `ask` adds a predict pause before the step. Use it on 1–3 steps, at the "aha" points, where the next move is not obvious.
 - `src` is `"path:line"` or a list of them, relative to `repo`. The build checks that each file and line exists and stamps the repo's git SHA in the footer.
+
+**The camera**
+- **Flow:** the frame holds the `focus` boxes and both ends of the lit `edges` of the step or cue, plus their neighbours. Keep each step or cue to 1–3 boxes that sit near each other. On a desktop, a step that lights boxes at both ends of the diagram gets the whole diagram.
+- A box appears when a step first names it in `focus`, or as an end of a lit edge. The build warns about a box that no step names, because the walk never shows it.
+- **Sequence:** every participant shows from the start, and a message appears when a step first lights it. A sequence that is readable at full width stays whole. A larger one (and any sequence on a phone) gets a frame around the lit message, with the participants' names pinned at the top of the frame.
+- **Phone:** the stage is a square that stays on screen with the caption under it. The frame never shows the diagram smaller than 0.75 times its drawn size: when the lit parts need more room (a long arrow in a side lane), the frame stays on the `focus` boxes.
+- The viewer can turn the camera off with "Follow the voice". The overview and "Test me" always show the whole diagram: in the same stage on a desktop, at full length on a phone. The recap shows the whole diagram on a desktop and follows each point's boxes on a phone.
+
+**The recap**
+- `recap` is 2–4 points, each one short sentence (under about 20 words), spoken after the last step while the camera shows the whole diagram. A point is a sentence, or `{"text": "...", "focus": ["box"], "edges": [["a", "b"]]}` to light its boxes as it is spoken.
+- Write what to remember, not a list of the steps. Use the same words as the captions.
 
 **Content rules**
 - Use real names and numbers from the work, never invented samples.
@@ -89,7 +112,7 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 "${CLAUDE_SKILL_DIR}/nw" my-scene.json 2>/dev/null
 ```
 
-The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `cues`, `kb` and `warnings`.
+The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `recap`, `cues`, `kb` and `warnings`.
 - **Exit 2:** a scene error. **Exit 3:** Kokoro failed. A build never falls back to the system voice silently. Pass `--allow-fallback` (or `--say`) only if the user accepts the robotic voice: macOS `say`, or `espeak-ng` on Linux when it is installed.
 - **Voices:** `af_heart` downloads with the model. Any other voice (`am_michael`, `bf_emma`, `bm_george`) downloads a small voice file on first use, which needs the network.
 
@@ -98,6 +121,8 @@ The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `cues
 1. Open the page from your localhost server: `http://localhost:<port>/<name>.html?v=<n>`. Change `?v=` after every rebuild, because the pane caches pages.
 2. Wait for the audio metadata, then run `JSON.stringify(window.__nw.selftest())`. It walks every step and cue, and reports:
    - what each one lit;
+   - a `state` text wider than its box;
+   - `camera.stepLabelPx`, the smallest label size in a camera frame;
    - arrows that cross a node;
    - text wider than its box;
    - the on-screen label size, which must be at least 10 px;
@@ -106,7 +131,8 @@ The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `cues
    - two arrows that share no box but run side by side (flows only).
    `ok:true` is the bar to pass.
 3. Run it once at desktop width (`resize_window` 1100×900) and once at `mobile`, then reset to `desktop`. Take one screenshot of each layout.
-4. Give the user the path. Mention `#3`-style deep links, the number keys, the speed menu, "Test me" and "Copy as notes", which copies the walkthrough as Markdown notes.
+4. Give the user the path. Mention `#3`-style deep links, the number keys, the speed menu, the "Follow the voice" switch, "Test me" and "Copy as notes", which copies the walkthrough as Markdown notes.
+   The browser pane must be visible while you judge motion: a hidden pane does not run the camera or the fades, so a screenshot can show a frame that is half moved. `selftest()` moves the camera without animation and is safe in a hidden pane.
 5. Publish it as an artifact only if the user wants to share it. The page is self-contained, so publish the HTML directly.
 
 ## Don'ts

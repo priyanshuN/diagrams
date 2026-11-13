@@ -23,6 +23,7 @@ h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:
 .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surf);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
 .toggle input:checked{background:var(--acc)}.toggle input:checked::after{transform:translateX(12px)}
 .toggle input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.toggle[hidden]{display:none}
 
 /* stage = diagram + docked player bar */
 .stage{background:var(--surf);border:1px solid var(--line);border-radius:14px;position:relative;--w:max(100%,min(var(--sw,100%),calc(100vw - 32px)));width:var(--w);margin-left:calc((100% - var(--w)) / 2);box-sizing:border-box}
@@ -30,6 +31,17 @@ h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:
 /* the travelling item: a pill that rides the lit arrow */
 .tok rect{fill:var(--c,var(--acc));rx:9}.tok text{fill:var(--onacc);font-size:11px;font-weight:650;text-anchor:middle;dominant-baseline:central}
 .tok{pointer-events:none;transition:opacity .25s}.tok.off{opacity:0}
+/* camera: the stage keeps one shape and the viewBox moves to frame what the voice names. A part appears when it is first named. */
+svg.dia.cam{width:100%!important;max-width:none!important;aspect-ratio:var(--ar,16/9);max-height:68vh}
+svg.dia.cam.phone{max-height:56vh}
+/* a sequence keeps the names of its participants at the top of the frame, on a strip that hides the messages passing under it */
+.camband{fill:var(--surf)}.sketch .camband{fill:var(--paper)}svg:not(.cam) .camband{display:none}
+/* a box cut by the edge of the frame fades out; a side that sits on the edge of the whole diagram does not fade */
+svg.cam{--ml:0%;--mr:0%;--mt:0%;--mb:0%;--fade:linear-gradient(90deg,transparent,#000 var(--ml),#000 calc(100% - var(--mr)),transparent),linear-gradient(transparent,#000 var(--mt),#000 calc(100% - var(--mb)),transparent);
+ -webkit-mask-image:var(--fade);mask-image:var(--fade);-webkit-mask-composite:source-in;mask-composite:intersect}
+svg.cam .node,svg.cam .elbl,svg.cam .grp,svg.cam .glbl,svg.cam .ske,svg.cam .skg,svg.cam .note{transition:opacity .45s}
+svg.cam .edge{transition:stroke .3s,opacity .45s}
+svg.cam .unseen,svg.cam .edge.unseen + .ske,svg.cam .grp.unseen + .skg{opacity:0}
 
 .player{display:flex;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--bar);border-radius:0 0 13px 13px}
 .ibtn{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:var(--mut);cursor:pointer;flex:none}
@@ -55,7 +67,20 @@ h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:
 .item.flash{animation:flash .5s ease-out}@keyframes flash{from{box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--acc)) 45%,transparent)}to{box-shadow:none}}
 @media (max-width:760px){.now{grid-template-columns:1fr}}
 .stepno{color:var(--faint);font-size:13px;font-variant-numeric:tabular-nums}
+/* a step's headline; the spoken sentence sits under it, one size smaller */
+.ttl{font-size:21px;line-height:1.3;font-weight:650;letter-spacing:-.01em;margin:3px 0 0;text-wrap:balance}.ttl[hidden]{display:none}
+.titled .cap{font-size:17px;margin-top:6px}
+/* recap: one line a point; while the voice plays, a point appears when it is spoken */
+.cap .pt{display:block;position:relative;padding-left:1.2em;margin-top:.35em;transition:opacity .3s}
+.cap .pt::before{content:"";position:absolute;left:.25em;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.cap.live .pt:not(.in){opacity:0}
+/* a box's second line, replaced by "state": what the box holds now, in the box's colour */
+.node .sub.live{fill:var(--c,var(--acc))}.node .sub.flash{animation:subin .5s ease-out}
+@keyframes subin{from{opacity:0}to{opacity:1}}
 .cap{font-size:19px;line-height:1.5;margin:4px 0 0;min-height:3em;text-wrap:pretty}
+/* the caption lights word by word while the voice plays; a box's name takes the box's colour */
+.cap .w{transition:color .12s}.cap .w.nm{color:var(--c)}
+.cap.live .w:not(.sp){color:var(--faint)}
 .src{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12.5px;color:var(--faint)}
 .src code{font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);background:var(--done);border-radius:6px;padding:5px 7px}
 
@@ -70,7 +95,7 @@ h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:
 .transcript li.on .txt{white-space:normal}
 .transcript li.past .n{color:var(--acc)}
 .ask{font-size:12px;color:var(--acc);border:1px solid currentColor;border-radius:999px;padding:0 7px;line-height:18px;white-space:nowrap}
-.quizzing .transcript{opacity:.35;pointer-events:none}.quizzing .now{display:none}@media (prefers-reduced-motion:reduce){.item.flash{animation:none}}
+.quizzing .transcript{opacity:.35;pointer-events:none}.quizzing .now{display:none}@media (prefers-reduced-motion:reduce){.item.flash,.node .sub.flash{animation:none}}
 
 /* predict + quiz card: directly under the player, never over the diagram */
 .card{margin:14px 0 0;max-width:66ch;background:var(--surf);border:1.5px solid var(--acc);border-radius:12px;padding:14px 16px}
@@ -89,13 +114,14 @@ h1{font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:
 .sketch h1{font:400 26px/1.2 Hand,"Bradley Hand",cursive;letter-spacing:0}
 
 footer{margin-top:22px;color:var(--faint);font-size:12.5px}
-@media (max-width:640px){main{padding-top:18px}h1{font-size:19px}.cap{font-size:17px}.player{gap:4px;padding:8px 10px;position:sticky;bottom:0;z-index:2;box-shadow:0 -6px 16px rgba(0,0,0,.12)}.rate{display:none}}
+@media (max-width:640px){main{padding-top:18px}h1{font-size:19px}.cap{font-size:17px}.ttl{font-size:19px}.titled .cap{font-size:16px}.player{gap:4px;padding:8px 10px;position:sticky;bottom:0;z-index:2;box-shadow:0 -6px 16px rgba(0,0,0,.12)}.rate{display:none}}
 @media (max-width:640px){.transcript .txt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.transcript li.on .txt{display:block}}
-@media (prefers-reduced-motion:reduce){.edge.on{animation:none;stroke-dasharray:none}.node rect,.node text,.edge{transition:none}}
+@media (prefers-reduced-motion:reduce){.edge.on{animation:none;stroke-dasharray:none}.node rect,.node text,.edge,.cap .w,.cap .pt,svg.cam .node,svg.cam .edge,svg.cam .elbl,svg.cam .grp,svg.cam .glbl,svg.cam .ske,svg.cam .skg,svg.cam .note{transition:none}}
 </style></head><body class="__THEME__"><main>
 <header>
  <div><h1>__TITLE__</h1><p class="lead" id="lead">__LEAD__</p></div>
- <div class="tools"><label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch">Pause to predict</label>
+ <div class="tools"><label class="toggle" id="camWrap" title="The camera frames the boxes the voice names. Turn it off to keep the whole diagram in view"><input type="checkbox" id="cam" role="switch" checked>Follow the voice</label>
+  <label class="toggle" id="predictWrap" title="Pause before key steps so you can guess what happens next"><input type="checkbox" id="predict" role="switch">Pause to predict</label>
   <button class="tool" id="ovbtn" title="Show the whole diagram (Esc)">Overview</button><button class="tool" id="quiz">Test me</button><button class="tool" id="notes">Copy as notes</button><button class="tool" id="imgcopy" title="Copy the diagram as it looks now (PNG)">Copy image</button><button class="tool" id="imgsave" title="Save the diagram as it looks now (PNG)">Download image</button></div>
 </header>
 <div class="stage" id="stage" style="--sw:__STAGEW__px">
@@ -111,7 +137,7 @@ footer{margin-top:22px;color:var(--faint);font-size:12.5px}
  </div>
 </div>
 <div class="card" id="card" hidden role="dialog" aria-live="polite"><h2 id="cardh"></h2><p id="cardq"></p><p class="ans" id="carda" hidden></p><div class="row" id="cardb"></div></div>
-<section class="now noitem" id="now"><div aria-live="polite"><div class="stepno" id="stepno"></div><p class="cap" id="cap"></p><div class="src" id="src"></div></div>
+<section class="now noitem" id="now"><div aria-live="polite"><div class="stepno" id="stepno"></div><h2 class="ttl" id="ttl" hidden></h2><p class="cap" id="cap"></p><div class="src" id="src"></div></div>
  <aside class="item" id="item" hidden aria-label="What the item looks like now"><header><i></i><span id="iname"></span><small id="iwhere"></small></header><dl id="ifields"></dl></aside></section>
 <ol class="transcript" id="steps"></ol>
 <footer id="foot"></footer>
@@ -126,10 +152,11 @@ const ICON={play:'<svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>',paus
 const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const dur=()=>a.duration||M.seconds;
 // ---- header meta + transcript rows
-const meta=document.createElement('span');meta.textContent=` ${S.length} steps, ${fmt(M.seconds)}`;$('lead').append(meta);
+const NSTEPS=S.filter(s=>!s.recap).length;  // the recap, when there is one, is a last step that is not counted
+const meta=document.createElement('span');meta.textContent=` ${NSTEPS} steps, ${fmt(M.seconds)}`;$('lead').append(meta);
 S.forEach((s,i)=>{const li=document.createElement('li'),b=document.createElement('button');
  b.innerHTML=`<span class="n">${i+1}</span><span class="txt"></span>${s.ask?'<span class="ask" title="Pauses here so you can predict">predict</span>':'<span></span>'}`;
- b.querySelector('.txt').textContent=s.caption;b.onclick=()=>go(i,true);li.appendChild(b);$('steps').appendChild(li)});
+ b.querySelector('.txt').textContent=s.title||s.caption;if(s.recap)b.querySelector('.n').textContent='•';b.onclick=()=>go(i,true);li.appendChild(b);$('steps').appendChild(li)});
 // ---- legend: what the colours mean
 (D.legend||[]).forEach(l=>{const s=document.createElement('span');s.className='c-'+l.color;s.innerHTML='<i></i>';s.append(l.label);$('legend').appendChild(s)});
 if(!(D.legend||[]).length)$('legend').hidden=true;
@@ -138,7 +165,9 @@ const nodeLabel=Object.fromEntries(nodes.map(n=>[n.dataset.n,n.querySelector('.l
 function itemAt(i,c){let it=null;for(let j=0;j<=i;j++){if(S[j].item)it=S[j].item;const last=j<i?S[j].cues.length-1:c;for(let k=0;k<=last;k++)if(S[j].cues[k]&&S[j].cues[k].item)it=S[j].cues[k].item}return it}
 const anyItem=S.some(s=>s.item||s.cues.some(q=>q.item));if(anyItem){$('item').hidden=false;$('now').classList.remove('noitem')}
 let shownItem=null;
-function showItem(i,c){if(!anyItem)return;const it=itemAt(i,c),where=lit(i,c).focus[0];const card=$('item');
+function showItem(i,c){if(!anyItem)return;const it=itemAt(i,c),where=lit(i,c).focus[0];const card=$('item'),rc=!!S[i].recap;
+ // the recap looks back at the whole flow, so no single item is "here"
+ card.hidden=rc;$('now').classList.toggle('noitem',rc);if(rc){shownItem=undefined;return}
  card.className='item c-'+((where&&D.colors[where])||'emerald');$('iwhere').textContent=where?'at '+nodeLabel[where]:'';
  if(it===shownItem)return;shownItem=it;$('iname').textContent=it?it.name:'Nothing yet';
  $('ifields').replaceChildren(...Object.entries((it&&it.fields)||{}).flatMap(([k,v])=>[Object.assign(document.createElement('dt'),{textContent:k}),Object.assign(document.createElement('dd'),{textContent:String(v)})]));
@@ -149,7 +178,7 @@ const pools=new Map(svgs0().map(s=>[s,[]]));function svgs0(){return[...document.
 function tokenFor(svg,k){const pool=pools.get(svg);while(pool.length<=k){const g=document.createElementNS(NS,'g'),r=document.createElementNS(NS,'rect'),tx=document.createElementNS(NS,'text');
  r.setAttribute('height',18);r.setAttribute('y',-9);g.append(r,tx);g.setAttribute('class','tok off');svg.appendChild(g);pool.push(g)}return pool[k]}
 function drawTokens(){const t=a.currentTime,[i,c]=stateAt(t),s=S[i],start=c>=0?s.cues[c].t:s.t,ids=lit(i,c).edges;
- const it=itemAt(i,c),label=(c>=0&&s.cues[c].carry)||(c<0&&s.carry)||(it&&it.name)||'';
+ const it=itemAt(i,c),label=s.recap?'':(c>=0&&s.cues[c].carry)||(c<0&&s.carry)||(it&&it.name)||'';
  let prog=(t-start)/TRAVEL;if(RM)prog=0.5;
  pools.forEach((pool,svg)=>{let k=0;if(getComputedStyle(svg).display!=='none'&&!quizOn&&label&&prog<1.12){
   ids.forEach(id=>{const e=svg.querySelector(`.edge[data-e="${CSS.escape(id)}"]`);if(!e)return;const g=tokenFor(svg,k++),L=e.getTotalLength(),p=e.getPointAtLength(L*Math.min(Math.max(prog,0),1));
@@ -163,23 +192,30 @@ function lit(i,c){const s=S[i];return c<0?{focus:s.focus,edges:s.edges}:s.cues[c
 let cur=[-1,-1],ov=false;
 function overview(){ov=true;cur=[-1,-1];
  nodes.forEach(n=>{n.classList.remove('on');n.classList.add('done')});edges.forEach(e=>{e.classList.remove('on');e.classList.add('done')});
- elbls.forEach(e=>e.classList.remove('on'));pools.forEach(pool=>pool.forEach(g=>g.classList.add('off')));
- $('stepno').textContent=`Overview · ${S.length} steps`;$('cap').textContent='The whole flow at once. Press play, or pick a step, to walk through it.';$('src').replaceChildren();
+ elbls.forEach(e=>e.classList.remove('on'));pools.forEach(pool=>pool.forEach(g=>g.classList.add('off')));showAll();showState();$('cap').classList.remove('live');$('ttl').hidden=true;$('now').classList.remove('titled');
+ $('stepno').textContent=`Overview · ${NSTEPS} steps`;$('cap').textContent='The whole flow at once. Press play, or pick a step, to walk through it.';$('src').replaceChildren();
  [...$('steps').children].forEach(li=>li.classList.remove('on','past'));
- if(anyItem){shownItem=undefined;$('item').className='item';$('iname').textContent='Nothing yet';$('iwhere').textContent='';$('ifields').replaceChildren()}
- try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+ if(anyItem){shownItem=undefined;$('item').hidden=false;$('now').classList.remove('noitem');$('item').className='item';$('iname').textContent='Nothing yet';$('iwhere').textContent='';$('ifields').replaceChildren()}
+ syncCam();try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
 function paint(i,c){if(cur[0]===i&&cur[1]===c)return;const stepChanged=cur[0]!==i;cur=[i,c];
  const now=lit(i,c),seenN=new Set(),seenE=new Set();
  const add=x=>{x.focus.forEach(n=>seenN.add(n));x.edges.forEach(e=>seenE.add(e))};
  for(let j=0;j<i;j++){add(S[j]);S[j].cues.forEach(add)}if(c>=0){add(S[i]);S[i].cues.slice(0,c).forEach(add)}
- nodes.forEach(n=>{const id=n.dataset.n;n.classList.toggle('on',now.focus.includes(id));n.classList.toggle('done',seenN.has(id)&&!now.focus.includes(id))});
- edges.forEach(e=>{const id=e.dataset.e;e.classList.toggle('on',now.edges.includes(id));e.classList.toggle('done',seenE.has(id))});
- elbls.forEach(e=>e.classList.toggle('on',now.edges.includes(e.dataset.e)));
- showItem(i,c);follow();
- if(stepChanged){$('stepno').textContent=`Step ${i+1} of ${S.length}`;$('cap').textContent=S[i].caption;
+ // shown so far: every box named up to now, and both ends of every arrow drawn up to now
+ const shown=new Set([...seenN,...now.focus]),drawn=new Set([...seenE,...now.edges]);drawn.forEach(k=>k.includes('>')&&k.split('>').forEach(n=>shown.add(n)));
+ nodes.forEach(n=>{const id=n.dataset.n;n.classList.toggle('on',now.focus.includes(id));n.classList.toggle('done',seenN.has(id)&&!now.focus.includes(id));n.classList.toggle('unseen',!SEQ&&!shown.has(id))});
+ edges.forEach(e=>{const id=e.dataset.e;e.classList.toggle('on',now.edges.includes(id));e.classList.toggle('done',seenE.has(id));e.classList.toggle('unseen',!drawn.has(id))});
+ elbls.forEach(e=>{e.classList.toggle('on',now.edges.includes(e.dataset.e));e.classList.toggle('unseen',!drawn.has(e.dataset.e))});
+ cams.forEach(C=>{C.grps.forEach(g=>{const u=!g.ids.some(id=>shown.has(id));g.el.classList.toggle('unseen',u);if(g.lbl)g.lbl.classList.toggle('unseen',u)});
+  C.notes.forEach(nt=>nt.el.classList.toggle('unseen',!drawn.has(nt.key)))});
+ if(S[i].recap)showAll();
+ showItem(i,c);showState();follow();
+ if(stepChanged){$('stepno').textContent=S[i].recap?`After ${NSTEPS} steps`:`Step ${i+1} of ${NSTEPS}`;setCap(i);
+  $('ttl').textContent=S[i].title||'';$('ttl').hidden=!S[i].title;$('now').classList.toggle('titled',!!S[i].title);
   $('src').replaceChildren(...(S[i].src.length?[Object.assign(document.createElement('span'),{textContent:'Code'}),...S[i].src.map(p=>Object.assign(document.createElement('code'),{textContent:p}))]:[]));
   [...$('steps').children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('past',j<i)});
-  try{history.replaceState(null,'','#'+(i+1))}catch(e){}}}
+  try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+ syncCam();litWords()}
 // back to the overview: stop, rewind, show the whole diagram
 function back(){if(quizOn)return;a.pause();hideCard();asked.clear();skipAsk=-1;overview();a.currentTime=0}
 function go(i,play){if(quizOn)return;ov=false;i=Math.max(0,Math.min(S.length-1,i));skipAsk=i;a.currentTime=S[i].t;paint(...stateAt(S[i].t));if(play)a.play()}
@@ -187,11 +223,11 @@ function go(i,play){if(quizOn)return;ov=false;i=Math.max(0,Math.min(S.length-1,i
 const asked=new Set();let skipAsk=-1;
 function tick(){if(quizOn||ov&&a.paused)return;const [i,c]=stateAt(a.currentTime);
  if(!a.paused&&$('predict').checked&&S[i].ask&&!asked.has(i)&&i!==skipAsk&&a.currentTime-S[i].t<0.6){asked.add(i);a.pause();a.currentTime=S[i].t;askCard(i);}
- paint(i,c);drawTokens();$('fill').style.width=(100*a.currentTime/dur())+'%';$('prog').setAttribute('aria-valuenow',Math.round(a.currentTime));
+ paint(i,c);litWords();showState();drawTokens();$('fill').style.width=(100*a.currentTime/dur())+'%';$('prog').setAttribute('aria-valuenow',Math.round(a.currentTime));
  $('t').textContent=fmt(a.currentTime)+' / '+fmt(dur())}
 function loop(){tick();if(!a.paused)requestAnimationFrame(loop)}
 function setPlayIcon(){const p=a.paused;$('play').innerHTML=p?ICON.play:ICON.pause;$('play').setAttribute('aria-label',p?'Play':'Pause')}
-a.onplay=()=>{ov=false;setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=setPlayIcon;a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
+a.onplay=()=>{ov=false;setPlayIcon();hideCard();requestAnimationFrame(loop)};a.onpause=a.onended=()=>{setPlayIcon();litWords()};a.onseeked=()=>{if(a.readyState>=1)tick()};setPlayIcon();
 a.onloadedmetadata=()=>{$('prog').setAttribute('aria-valuemax',Math.round(a.duration));S.slice(1).forEach(s=>{const b=document.createElement('b');b.style.left=(100*s.t/a.duration)+'%';$('prog').appendChild(b)});tick()};
 $('play').addEventListener('click',e=>{if(quizOn){e.stopImmediatePropagation()}},true);
 $('play').onclick=()=>a.paused?a.play():a.pause();$('prev').onclick=()=>cur[0]<=0?back():go(cur[0]-1,!a.paused);$('ovbtn').onclick=back;a.addEventListener('ended',back);$('next').onclick=()=>go(cur[0]+1,!a.paused);
@@ -215,8 +251,8 @@ let quizOn=false,qi=0,score=0,qsteps=[];const svgs=[...document.querySelectorAll
 const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),maskWords=[...D.labels,...D.labels.flatMap(l=>l.split(/\s+/)).filter(w=>w.length>=2&&/^[A-Z0-9]/.test(w))];
 const mask=t=>maskWords.reduce((s,w)=>s.replace(new RegExp('(^|[^\\w▢])'+esc(w)+'(?![\\w])','gi'),'$1▢▢▢'),t);
 function startQuiz(){a.pause();quizOn=true;document.body.classList.add('quizzing');$('quiz').classList.add('on');
- nodes.forEach(n=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.setAttribute('aria-label','Diagram box')});qi=0;score=0;qsteps=S.map((s,i)=>i).filter(i=>S[i].focus.length);svgs.forEach(s=>s.classList.add('quiz'));
- nodes.forEach(n=>n.classList.remove('on','done'));edges.forEach(e=>e.classList.remove('on','done'));$('quiz').textContent='End test';askQ()}
+ nodes.forEach(n=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.setAttribute('aria-label','Diagram box')});qi=0;score=0;qsteps=S.map((s,i)=>i).filter(i=>S[i].focus.length&&!S[i].recap);svgs.forEach(s=>s.classList.add('quiz'));
+ nodes.forEach(n=>n.classList.remove('on','done'));edges.forEach(e=>e.classList.remove('on','done'));showAll();showState();syncCam();$('quiz').textContent='End test';askQ()}
 let answered=false;
 function askQ(){answered=false;nodes.forEach(n=>n.classList.remove('right','wrong'));if(qi>=qsteps.length)return quizDone();const i=qsteps[qi];
  card(`Where does this happen? ${qi+1} of ${qsteps.length}`,mask(S[i].caption),'',[['Skip',()=>{qi++;askQ()}],['End test',endQuiz]])}
@@ -225,22 +261,26 @@ function answer(id){const i=qsteps[qi];if(!quizOn||answered||i===undefined)retur
  card(ok?'Right':'Not quite',S[i].caption,'',[['Next',()=>{qi++;askQ()},true]])}
 function quizDone(){const best=Math.max(score,+(store.get('best:'+D.title)||0));store.set('best:'+D.title,best);
  card('Done',`You placed ${score} of ${qsteps.length} steps. Your best: ${best} of ${qsteps.length}.`,'',[['Try again',startQuiz,true],['Close',endQuiz]])}
-function endQuiz(){quizOn=false;document.body.classList.remove('quizzing');$('quiz').classList.remove('on');nodes.forEach(n=>{n.removeAttribute('tabindex');n.removeAttribute('role');n.removeAttribute('aria-label')});svgs.forEach(s=>s.classList.remove('quiz'));nodes.forEach(n=>n.classList.remove('right','wrong'));hideCard();$('quiz').textContent='Test me';cur=[-1,-1];paint(...stateAt(a.currentTime))}
+function endQuiz(){quizOn=false;document.body.classList.remove('quizzing');$('quiz').classList.remove('on');nodes.forEach(n=>{n.removeAttribute('tabindex');n.removeAttribute('role');n.removeAttribute('aria-label')});svgs.forEach(s=>s.classList.remove('quiz'));nodes.forEach(n=>n.classList.remove('right','wrong'));hideCard();$('quiz').textContent='Test me';if(ov)overview();else{cur=[-1,-1];paint(...stateAt(a.currentTime))}}
 nodes.forEach(n=>n.addEventListener('click',()=>quizOn&&answer(n.dataset.n)));
 $('quiz').onclick=()=>quizOn?endQuiz():startQuiz();
 if(!S.some(s=>s.ask))$('predictWrap').hidden=true;
 const pv=store.get('predict');if(pv!==null)$('predict').checked=pv==='1';$('predict').onchange=e=>store.set('predict',e.target.checked?'1':'0');
 // ---- notes export
-$('notes').onclick=async()=>{const md=[`# ${D.title}`,D.lead?`\n${D.lead}\n`:'',...S.map((s,i)=>`${i+1}. ${s.caption}${s.src.length?`  \n   Code: \`${s.src.join('`, `')}\``:''}${s.ask?`  \n   - Q: ${s.ask.q}  \n   - A: ${s.ask.a}`:''}`),
+$('notes').onclick=async()=>{const md=[`# ${D.title}`,D.lead?`\n${D.lead}\n`:'',...S.filter(s=>!s.recap).map((s,i)=>`${i+1}. ${s.title?`**${s.title}.** `:''}${s.caption}${s.src.length?`  \n   Code: \`${s.src.join('`, `')}\``:''}${s.ask?`  \n   - Q: ${s.ask.q}  \n   - A: ${s.ask.a}`:''}`),
+ ...S.filter(s=>s.recap).flatMap(s=>['\nRecap\n',...s.points.map(p=>`- ${p.text}`)]),
  M.sha?`\nBuilt from ${M.repo}@${M.sha} on ${M.built}.`:''].join('\n');
  try{await navigator.clipboard.writeText(md)}catch(e){const t=document.createElement('textarea');t.value=md;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
  $('notes').textContent='Copied';setTimeout(()=>$('notes').textContent='Copy as notes',1500)};
 // ---- image export: the diagram as it looks now, as a PNG with the page's styles inlined
 function diagramSvg(){
  const src=[...document.querySelectorAll('svg.dia')].find(v=>v.getClientRects().length)||document.querySelector('svg.dia');
- const vb=src.viewBox.baseVal,svg=src.cloneNode(true),k=2;
+ const svg=src.cloneNode(true),k=2,F=cams.get(src).FULL,vb={x:F[0],y:F[1],width:F[2],height:F[3]};
+ // the image is the whole diagram, whatever the camera shows now
+ svg.setAttribute('viewBox',F.join(' '));svg.querySelectorAll('.unseen').forEach(x=>x.classList.remove('unseen'));
+ svg.querySelectorAll('.camband').forEach(x=>x.remove());svg.querySelectorAll('.camhead').forEach(x=>x.removeAttribute('transform'));
  svg.setAttribute('xmlns',NS);svg.setAttribute('width',vb.width*k);svg.setAttribute('height',vb.height*k);
- svg.setAttribute('style',`font-family:${getComputedStyle(src).fontFamily}`);svg.classList.remove('desk','phone','quiz');svg.classList.add(...document.body.classList);
+ svg.setAttribute('style',`font-family:${getComputedStyle(src).fontFamily}`);svg.classList.remove('desk','phone','quiz','cam');svg.classList.add(...document.body.classList);
  // freeze light or dark: in an image, prefers-color-scheme may not match the page
  svg.setAttribute('data-theme',document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
  const css=[...document.styleSheets].flatMap(sh=>{try{return [...sh.cssRules].map(r=>r.cssText)}catch(e){return []}}).join('\n');
@@ -278,10 +318,16 @@ function visibleSvg(){return svgs.find(s=>getComputedStyle(s).display!=='none')}
 const overlap=(b,c)=>b.x<c.x+c.width-1&&c.x<b.x+b.width-1&&b.y<c.y+c.height-1&&c.y<b.y+b.height-1;
 window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const out={ok:true,problems:[],duration:a.duration,steps:[]};
  if(a.duration&&Math.abs(a.duration-M.seconds)>0.5)out.problems.push(`audio ${a.duration}s vs built ${M.seconds}s`);
- const svg=visibleSvg(),nd=[...svg.querySelectorAll('.node')];
- S.forEach((s,i)=>{paint(i,-1);const st={step:i+1,lit:nd.filter(n=>n.classList.contains('on')).map(n=>n.dataset.n),cues:[]};
+ const svg=visibleSvg(),nd=[...svg.querySelectorAll('.node')],ov0=ov,camUse=$('cam').checked;ov=false;camCut=true;
+ // label size on screen: the picture is fitted inside the stage, so the smaller of the two scales counts
+ const lblPx=()=>{const R=svg.getBoundingClientRect(),v=svg.viewBox.baseVal;return parseFloat(getComputedStyle(svg.querySelector('.lbl')).fontSize)*Math.min(R.width/v.width,R.height/v.height)};
+ let stepPx=1e9;
+ S.forEach((s,i)=>{paint(i,-1);if(camUse&&!s.recap)stepPx=Math.min(stepPx,lblPx());const st={step:i+1,lit:nd.filter(n=>n.classList.contains('on')).map(n=>n.dataset.n),cues:[]};
+  if(camUse){const hid=nd.filter(n=>n.classList.contains('on')&&n.classList.contains('unseen')).map(n=>n.dataset.n);if(hid.length)out.problems.push(`step ${i+1} lights hidden box(es) ${hid}`)}
   if(s.focus.length&&!st.lit.length)out.problems.push(`step ${i+1} lights nothing`);
   s.cues.forEach((q,k)=>{paint(i,k);st.cues.push(nd.filter(n=>n.classList.contains('on')).map(n=>n.dataset.n))});out.steps.push(st)});
+ // the checks below read the whole diagram: show every part, and drop the camera styles that hide parts not yet named
+ ov=true;cur=[-1,-1];showAll();svg.classList.remove('cam');
  const boxes=nd.map(n=>({id:n.dataset.n,b:n.querySelector('.shape').getBBox()}));
  svg.querySelectorAll('.edge').forEach(e=>{const [f,t]=e.dataset.e.split('>'),L=e.getTotalLength();
   for(let k=1;k<30;k++){const p=e.getPointAtLength(L*k/30);const hit=boxes.find(x=>x.id!==f&&x.id!==t&&p.x>x.b.x+2&&p.x<x.b.x+x.b.width-2&&p.y>x.b.y+2&&p.y<x.b.y+x.b.height-2);
@@ -296,13 +342,108 @@ window.__nw={version:M.version,seconds:M.seconds,steps:S.length,selftest(){const
     if(bd<16&&nn>0&&Math.abs(ax*by-ay*bx)/nn<0.26){run+=Math.hypot(ax,ay);best=Math.max(best,run)}else run=0}
    if(best>20)out.problems.push(`edges ${x.k} and ${y.k} run side by side`)}))}
  nd.forEach(n=>{const w=n.querySelector('.shape').getBBox().width;n.querySelectorAll('text').forEach(t=>{if(t.getComputedTextLength()>w-8)out.problems.push(`text "${t.textContent}" overflows ${n.dataset.n}`)})});
+ // each "state" text must fit its box: measure it at the size of the box's second line
+ if(anyState){const probe=document.createElementNS(NS,'text');probe.setAttribute('class','sub');const seenV=new Set();
+  S.forEach(s=>[s,...s.cues].forEach(x=>Object.entries(x.state||{}).forEach(([id,v])=>{const n=nd.find(q=>q.dataset.n===id);if(!n||seenV.has(id+v))return;seenV.add(id+v);
+   n.appendChild(probe);probe.textContent=v;if(probe.getComputedTextLength()>n.querySelector('.shape').getBBox().width-8)out.problems.push(`state "${v}" overflows ${id}`)})));probe.remove()}
  const tl=[...svg.querySelectorAll('.glbl,.elbl')].filter(t=>getComputedStyle(t).opacity!=='0').map(t=>({t:t.textContent,b:t.getBBox()}));
  tl.forEach((p,i)=>tl.slice(i+1).forEach(q=>{if(overlap(p.b,q.b))out.problems.push(`labels "${p.t}" and "${q.t}" overlap`)}));
  tl.forEach(p=>boxes.forEach(x=>{if(overlap(p.b,x.b))out.problems.push(`label "${p.t}" overlaps box ${x.id}`)}));
- const fs=parseFloat(getComputedStyle(svg.querySelector('.lbl')).fontSize)*svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
- if(fs<10)out.problems.push(`labels render at ${fs.toFixed(1)}px`);out.labelPx=+fs.toFixed(1);
- cur=[-1,-1];paint(...stateAt(a.currentTime));out.ok=!out.problems.length;return out}};
+ if(camUse){out.camera={stepLabelPx:+stepPx.toFixed(1)};if(stepPx<10)out.problems.push(`camera: labels render at ${stepPx.toFixed(1)}px in a step`)}
+ ov=true;cur=[-1,-1];syncCam(true);const fs=lblPx();
+ if(fs<10)out.problems.push(`labels render at ${fs.toFixed(1)}px`+(camUse?' in the overview':''));out.labelPx=+fs.toFixed(1);
+ ov=ov0;if(ov)overview();else{cur=[-1,-1];paint(...stateAt(a.currentTime))}camCut=false;out.ok=!out.problems.length;return out}};
+// ---- caption: one span per word. A box's name takes the box's colour: its whole label ("SNS topic"),
+// or one word of it that is a name (starts with a capital or a digit: "SES", "S3") and is in no other label.
+const capKey=w=>w.toLowerCase().replace(/['’]s\b/,'').replace(/[^a-z0-9]/g,''),nameCol={},phrases=[];
+{const cnt={},own={},seen=new Set();nodes.forEach(n=>{const id=n.dataset.n;if(seen.has(id)||n.classList.contains('kind-decision')||!D.colors[id])return;seen.add(id);
+  const ws=nodeLabel[id].split(/\s+/).filter(w=>capKey(w));if(ws.length>1)phrases.push({keys:ws.map(capKey),col:D.colors[id]});
+  new Set(ws.filter(w=>/^[A-Z0-9]/.test(w)&&capKey(w).length>1).map(capKey)).forEach(w=>{cnt[w]=(cnt[w]||0)+1;own[w]=id})});
+ Object.keys(cnt).forEach(w=>{if(cnt[w]===1)nameCol[w]=D.colors[own[w]]})}
+function capWords(text){const ws=text.trim().split(/\s+/),keys=ws.map(capKey),col=keys.map(k=>nameCol[k]||'');
+ phrases.forEach(p=>{for(let k=0;k+p.keys.length<=keys.length;k++)if(p.keys.every((x,j)=>keys[k+j]===x))p.keys.forEach((x,j)=>col[k+j]=p.col)});
+ const out=[];ws.forEach((w,k)=>{const sp=document.createElement('span');sp.className='w'+(col[k]?' nm c-'+col[k]:'');sp.textContent=w;if(k)out.push(' ');out.push(sp)});return out}
+let capT=[];  // one start time for each word span of the caption on screen
+function setCap(i){const s=S[i];if(!s.recap){capT=s.wt||[];$('cap').replaceChildren(...capWords(s.caption));return}
+ capT=s.points.flatMap(p=>p.wt);$('cap').replaceChildren(...s.points.map(p=>{const d=document.createElement('span');d.className='pt';d.append(...capWords(p.text));return d}))}
+// while the voice plays, words not yet spoken are faint; paused, the whole caption is readable
+function litWords(){const el=$('cap'),live=!a.paused&&!ov&&!quizOn&&cur[0]>=0;el.classList.toggle('live',live);if(!live)return;
+ const t=a.currentTime+0.05,ws=el.querySelectorAll('.w');for(let k=0;k<ws.length;k++)ws[k].classList.toggle('sp',k>=capT.length||t>=capT[k]);
+ if(S[cur[0]].recap)el.querySelectorAll('.pt').forEach((d,k)=>d.classList.toggle('in',t>=S[cur[0]].points[k].t))}
+// ---- box state: "state" on a step or cue replaces a box's second line from then on. While the voice plays,
+// a box at the end of a lit arrow changes when the pill arrives, not when it leaves.
+const anyState=S.some(s=>s.state||s.cues.some(q=>q.state));let stateKey='{}';
+function boxState(i,c){const m={};for(let j=0;j<=i;j++){const last=j<i?S[j].cues.length-1:c;for(let k=-1;k<=last;k++){const x=k<0?S[j]:S[j].cues[k];if(!x.state)continue;
+   const wait=j===i&&k===c&&!a.paused&&a.currentTime-x.t<TRAVEL&&!RM;
+   Object.entries(x.state).forEach(([id,v])=>{if(!(wait&&x.edges.some(e=>e.endsWith('>'+id))))m[id]=v})}}return m}
+function showState(){if(!anyState)return;const m=cur[0]<0||quizOn||S[cur[0]].recap?{}:boxState(cur[0],cur[1]),key=JSON.stringify(m);if(key===stateKey)return;stateKey=key;
+ nodes.forEach(n=>{const v=m[n.dataset.n],lbl=n.querySelector('.lbl');let sub=n.querySelector('.sub');
+  if(v===undefined){if(n._sub0===undefined)return;if(n._sub0===null){sub.remove();lbl.setAttribute('y',n._y0)}else{sub.textContent=n._sub0;sub.classList.remove('live','flash')}n._sub0=undefined;return}
+  if(n._sub0===undefined){n._sub0=sub?sub.textContent:null;n._y0=lbl.getAttribute('y')}
+  // a box drawn with one line gets a second one, at the place the build gives a two-line box
+  if(!sub){const b=n.querySelector('.shape').getBBox();sub=document.createElementNS(NS,'text');sub.setAttribute('class','sub');sub.setAttribute('x',lbl.getAttribute('x'));sub.setAttribute('y',b.y+44);lbl.setAttribute('y',b.y+28);n.appendChild(sub)}
+  if(sub.textContent!==v){sub.textContent=v;sub.classList.remove('flash');void sub.getBBox();sub.classList.add('live','flash')}})}
+// ---- camera: frame what is lit. One camera for each drawing (desktop and phone); only the visible one moves.
+// Desktop: the overview, the recap and the test show the whole diagram in the same stage.
+// Phone: the whole diagram does not fit a small stage, so the overview and the test turn the camera off.
+const SEQ=svgs.some(v=>v.classList.contains('seq')),cams=new Map();let camCut=true;
+svgs.forEach(svg=>{const F=['x','y','width','height'].map(k=>svg.viewBox.baseVal[k]),phone=svg.classList.contains('phone'),C={svg,FULL:F,vb:F.slice(),raf:0,goal:'',phone,grps:[],notes:[],head:null};cams.set(svg,C);
+ svg.style.setProperty('--ar',phone?'1':Math.min(2.4,Math.max(1.4,F[2]/F[3])).toFixed(3));
+ // a group box belongs to the boxes inside it, and shows once one of them does
+ C.grps=[...svg.querySelectorAll('.grp')].map((el,k)=>{const b=el.getBBox();return{el,lbl:svg.querySelectorAll('.glbl')[k],
+  ids:[...svg.querySelectorAll('.node')].filter(n=>{const q=n.querySelector('.shape').getBBox(),x=q.x+q.width/2,y=q.y+q.height/2;return x>b.x&&x<b.x+b.width&&y>b.y&&y<b.y+b.height}).map(n=>n.dataset.n)}});
+ if(!SEQ)return;
+ // a note shows with the message under it (or, for a last note, the message over it)
+ const es=[...svg.querySelectorAll('.edge')].map(el=>({key:el.dataset.e,y:el.getBBox().y})).sort((p,q)=>p.y-q.y);
+ C.notes=[...svg.querySelectorAll('.note')].map(el=>{const y=el.getBBox().y,nx=es.find(q=>q.y>y)||es[es.length-1];return{el,key:nx?nx.key:''}});
+ // the participants move into one group, drawn last, that the camera keeps at the top of the frame
+ const g=document.createElementNS(NS,'g'),band=document.createElementNS(NS,'rect'),ns=[...svg.querySelectorAll('.node')],bot=Math.max(...ns.map(n=>{const q=n.querySelector('.shape').getBBox();return q.y+q.height}));
+ g.setAttribute('class','camhead');band.setAttribute('class','camband');[['x',F[0]-2000],['y',F[1]-2000],['width',F[2]+4000],['height',bot+8-F[1]+2000]].forEach(([k,v])=>band.setAttribute(k,v));
+ g.append(band,...ns);svg.appendChild(g);C.head=g});
+function showAll(){document.querySelectorAll('.unseen').forEach(x=>x.classList.remove('unseen'))}
+function setVB(C){C.svg.setAttribute('viewBox',C.vb.map(v=>v.toFixed(1)).join(' '));if(C.head)C.head.setAttribute('transform',`translate(0,${Math.max(0,C.vb[1]-C.FULL[1]).toFixed(1)})`)}
+// grow a frame to the shape of the stage, so the picture fills it
+function fit(C,f){let[x,y,w,h]=f;const r=C.svg.getBoundingClientRect(),ar=r.width&&r.height?r.width/r.height:C.FULL[2]/C.FULL[3];
+ if(w/h<ar){const nw=h*ar;x-=(nw-w)/2;w=nw}else{const nh=w/ar;y-=(nh-h)/2;h=nh}return[x,y,w,h]}
+// keep a frame on the diagram: inside it where the diagram is larger, centred on it where the frame is larger
+const hold=(p,len,lo,L)=>len>=L?lo-(len-L)/2:Math.min(Math.max(p,lo),lo+L-len);
+function litBox(C,sel,keep){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;C.svg.querySelectorAll(sel).forEach(el=>{if(!keep(el))return;const b=el.getBBox();x0=Math.min(x0,b.x);y0=Math.min(y0,b.y);x1=Math.max(x1,b.x+b.width);y1=Math.max(y1,b.y+b.height)});return x1<x0?null:[x0,y0,x1,y1]}
+function frameFor(C,now){const F=C.FULL,ids=new Set(now.focus);now.edges.forEach(k=>k.includes('>')&&k.split('>').forEach(n=>ids.add(n)));
+ const nb=litBox(C,'.node',n=>ids.has(n.dataset.n)),eb=litBox(C,'.edge,.elbl',e=>now.edges.includes(e.dataset.e));
+ if(!nb&&!eb)return C.phone?null:fit(C,F);
+ const all=[nb,eb].filter(Boolean),x0=Math.min(...all.map(b=>b[0])),y0=Math.min(...all.map(b=>b[1])),x1=Math.max(...all.map(b=>b[2])),y1=Math.max(...all.map(b=>b[3]));
+ // margin around the lit parts. Never closer than 1.2 times the drawn size, so the neighbours stay in view.
+ const r=C.svg.getBoundingClientRect(),P=48;let w=Math.max(x1-x0+2*P,r.width/1.2),h=Math.max(y1-y0+2*P,r.height/1.2),cx=(x0+x1)/2,cy=(y0+y1)/2;
+ // Never farther than 0.75 times: when the lit parts need more room, the frame stays on the boxes the voice names.
+ const mw=r.width/.75,mh=r.height/.75;if(w>mw||h>mh){const fb=litBox(C,'.node',n=>now.focus.includes(n.dataset.n));if(fb){cx=(fb[0]+fb[2])/2;cy=(fb[1]+fb[3])/2}w=Math.min(w,mw);h=Math.min(h,mh)}
+ const f=fit(C,[cx-w/2,cy-h/2,w,h]),full=fit(C,F);if(!C.phone&&f[2]>=full[2]*.88)return full;
+ f[0]=hold(f[0],f[2],F[0],F[2]);f[1]=hold(f[1],f[3],F[1],F[3]);return f}
+// a sequence: the full width when it is readable, the lit message a little under the middle, the names pinned on top
+function frameSeq(C,now){const F=C.FULL,mb=litBox(C,'.edge,.elbl',e=>now.edges.includes(e.dataset.e));if(!mb)return null;
+ const r=C.svg.getBoundingClientRect(),ar=r.width/r.height,w=F[2]<=r.width/.75?Math.max(F[2],r.width/1.2):r.width/.9,h=w/ar;
+ if(w>=F[2]&&h>=F[3]*.88)return fit(C,F);
+ let x=(mb[0]+mb[2])/2-w/2;
+ // a message wider than the frame: show the end it arrives at
+ if(mb[2]-mb[0]>w-96){const e=[...C.svg.querySelectorAll('.edge')].find(q=>now.edges.includes(q.dataset.e)),tip=e.getPointAtLength(e.getTotalLength()).x;x=tip>(mb[0]+mb[2])/2?tip+60-w:tip-60}
+ return[hold(x,w,F[0],F[2]),hold((mb[1]+mb[3])/2-.6*h,h,F[1],F[3]),w,h]}
+function camTo(C,to,cut){if(!to)return;const goal=to.map(v=>v.toFixed(0)).join(' ');if(goal===C.goal&&!cut)return;C.goal=goal;cancelAnimationFrame(C.raf);
+ // a box cut by the frame fades out; a side at the edge of the diagram, and the pinned names of a sequence, do not
+ const F=C.FULL,m=on=>on?'5%':'0%';C.svg.style.setProperty('--ml',m(to[0]>F[0]+2));C.svg.style.setProperty('--mr',m(to[0]+to[2]<F[0]+F[2]-2));
+ C.svg.style.setProperty('--mt',m(!C.head&&to[1]>F[1]+2));C.svg.style.setProperty('--mb',m(to[1]+to[3]<F[1]+F[3]-2));
+ if(cut||camCut||RM){C.vb=to.slice();setVB(C);return}
+ const from=C.vb.slice(),st=performance.now();(function step(n){const p=Math.min(1,Math.max(0,(n-st)/800)),k=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+  C.vb=from.map((v,j)=>v+(to[j]-v)*k);setVB(C);if(p<1)C.raf=requestAnimationFrame(step)})(st)}
+function syncCam(cut){const use=$('cam').checked,wide=ov||quizOn||cur[0]<0,rc=!wide&&!!S[cur[0]].recap;
+ cams.forEach(C=>{const on=use&&getComputedStyle(C.svg).display!=='none'&&!(C.phone&&wide);let snap=cut;
+  const had=C.svg.classList.contains('cam');C.svg.classList.toggle('cam',on);
+  // camera off: back to the whole diagram, drawn at its own size
+  if(!on){if(had||C.goal){cancelAnimationFrame(C.raf);C.goal='';C.vb=C.FULL.slice();setVB(C)}return}
+  if(!had){snap=true;if(C.phone&&!camCut)$('stage').scrollIntoView({block:'start',behavior:RM?'auto':'smooth'})}
+  camTo(C,wide||(rc&&!C.phone)?fit(C,C.FULL):(SEQ?frameSeq:frameFor)(C,lit(cur[0],cur[1])),snap)})}
+{const c0=store.get('cam');if(c0!==null)$('cam').checked=c0==='1';
+ $('cam').onchange=e=>{store.set('cam',e.target.checked?'1':'0');syncCam(true)};addEventListener('resize',()=>syncCam(true));addEventListener('load',()=>syncCam(true))}
 // ---- start at #n
 const h=parseInt(location.hash.slice(1));if(h>=1&&h<=S.length)paint(...stateAt(S[h-1].t));else overview();
 if(h>=1&&h<=S.length){if(a.readyState>=1)go(h-1,false);else a.addEventListener('loadedmetadata',()=>go(h-1,false),{once:true})}
+camCut=false;
 </script></body></html>
