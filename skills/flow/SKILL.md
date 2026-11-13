@@ -102,7 +102,7 @@ Draw with box-drawing characters: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼`,
 }
 ```
 
-- **Node id** keys: `at` [col, row] (give it for every node or none; without it, nodes are placed in layers along the arrows), `color`, `kind` (`service`, `external` = dashed, `store`, `decision`), `sub`, `label`.
+- **Node id** keys: `at` [col, row] (give it for every node or none; without it, nodes are placed in layers along the arrows), `color`, `kind` (`service`, `external` = dashed, `store`, `decision`), `sub`, `label`. `notes` is a list of 1 to 8 detail lines (36 characters or fewer each) drawn inside the box under its name: the fields of a table (`"Jobs: id, userId, taskId"`), the settings of a queue (`"retry, exponential backoff"`). The box grows downwards and its row grows with it. Use notes for facts a reader of a design needs but an arrow cannot carry; a decision cannot have notes.
 - **Subgraph id** keys: `color`.
 - **`from>to`** keys: `tone` (`good`, `warn` or `bad`) on the arrows that leave a decision.
 - **Colours mean something**, never decoration: slate = outside your system (people, their devices, third parties), sky = cloud or vendor services, emerald = your app (the default), amber = waits for a person, rose = failure. Add a `legend` whenever more than one colour appears.

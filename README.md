@@ -5,7 +5,7 @@ A Claude Code plugin for diagrams that explain. It has four skills, and the ques
 | The reader asks | Skill | Output |
 |---|---|---|
 | What talks to what? In what order? | `diagrams:flow` | text in chat, or a picture page |
-| Walk me through this flow | `diagrams:walkthrough` | the picture with a voice, a camera that follows it, and a quiz |
+| Walk me through this flow | `diagrams:walkthrough` | the picture with a voice, a camera, an item view, "what if" replays and a quiz |
 | What did this run do? What changed between two runs? | `diagrams:trace` | a sequence diagram of a recorded run, or a diff of two |
 | How does this idea behave? Why this number? | `diagrams:concept` | an interactive page: a picture, its controls, one result line |
 
@@ -48,7 +48,7 @@ The concept skill has no picture types. It holds rules (the control the real sys
 | `flow` | Node 18+, `uv` (it fetches Python 3.12 by itself) | yes |
 | `walkthrough` | the above; `ffmpeg` on Linux for compact audio | yes |
 | `trace` | Node 18+ (and the `flow` libraries for `--text`) | yes |
-| `concept` | Node 18+ | yes |
+| `concept` | Node 18+; a narrated page also needs the `walkthrough` row | yes |
 
 Both skills run on uv's Python 3.12, so no system Python upgrade is needed on either machine. Without `uv`, the flow picture tool falls back to `python3` (3.9+).
 
@@ -63,6 +63,8 @@ Everything runs on your machine. The plugin sends no data anywhere: no telemetry
 | Plugin install | the Node packages in `package-lock.json`: beautiful-mermaid, libavoid-js (includes a WebAssembly router), roughjs, @fontsource/architects-daughter | the npm registry |
 | `flow` | `node` scripts (`fd.mjs`, `avoid_route.mjs`, `rough.mjs`) and `python` (`diagram.py`, standard library only); they read your diagram file and write the page or text you ask for | nothing |
 | `concept` | one `node` script (`cx.mjs`, standard library only); it reads your source file and writes one page | nothing |
+| `concept`, narrated page | the same script calls the `walkthrough` voice (`voice.py`) for the audio | the same as a `walkthrough` build |
+| Every voice build | writes each spoken line to `~/.cache/narrated-walkthrough/lines` (removed after 30 days without use), so the next build speaks only changed lines | nothing |
 | First `walkthrough` build | `uv run --frozen` creates a Python environment in `~/.local/share/narrated-walkthrough/venv` from `uv.lock` (on Linux, CPU-only PyTorch from download.pytorch.org) | PyPI, download.pytorch.org |
 | First `walkthrough` build | the Kokoro-82M voice model (about 340 MB), cached in `~/.cache/huggingface` | huggingface.co |
 | First `walkthrough` build | the English text-to-phoneme model that the misaki library loads, if it is not installed yet | the misaki/spaCy defaults |

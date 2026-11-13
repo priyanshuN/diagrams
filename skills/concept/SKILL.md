@@ -1,6 +1,6 @@
 ---
 name: concept
-description: Draw an interactive picture page that shows how an idea behaves - an algorithm, a number, a data structure or a policy (hashing, modulo and round robin, a golden-ratio stride, backoff and jitter, rate limits, quorum, cache eviction, consistent hashing). You draw the shape the idea has (a ring, a number line, lanes on a time axis, buckets, a grid) with the control the real system has, a baseline next to it, and one plain result line. Use when the reader asks "how does X work", "why this number", "what happens if I change X", or "explain X" and the answer is not a set of boxes and arrows. For what talks to what, or who calls whom in what order, use diagrams:flow.
+description: Draw an interactive picture page that shows how an idea behaves - an algorithm, a number, a data structure or a policy (hashing, modulo and round robin, a golden-ratio stride, backoff and jitter, rate limits, quorum, cache eviction, consistent hashing). You draw the shape the idea has (a ring, a number line, lanes on a time axis, buckets, a grid) with the control the real system has, a baseline next to it, and one plain result line. Use when the reader asks "how does X work", "why this number", "what happens if I change X", or "explain X" and the answer is not a set of boxes and arrows. For what talks to what, or who calls whom in what order, use diagrams:flow. It can also add a voice that explains the page and moves its controls while it speaks (a narrated concept page).
 ---
 
 # Concept pictures
@@ -109,6 +109,38 @@ Some ideas need a clock (a rate limiter, a retry, a queue).
 - **The result line judges what is in view.** When the event it describes leaves the window, go back to the `.quiet` line.
 - **Draw the level two ways when both matter:** the state now (the shape), and the state over the window (a line with a `.mark` at "now", on an `.axis`).
 
+### A narrated page (only when the user asks for a voice)
+
+A narrated page is the same page with a voice. The voice reads short beats, and on the spoken word the page moves **its own controls** with the events a viewer makes. The picture is never a recording: the viewer can touch a control at any time, the voice then stops, and "Resume" puts the page back where the story was. Add one block to the source, before the controls:
+
+```html
+<script type="application/json" id="narration">
+{
+ "voice": "af_heart",
+ "reset": [{"set": "parts", "to": 12}, {"press": "reset"}],
+ "beats": [
+  {"title": "A bad stride: 6",
+   "caption": "Now a bad stride. Move the stride to 6. Six and 12 share a factor, so the right ring only ever touches partitions 0 and 6.",
+   "do": [{"at": "Move the stride", "set": "stride", "to": 6},
+          {"at": "only ever touches", "show": "jump"}]}
+ ]
+}
+</script>
+```
+
+- **A beat** (2 to 12) has a `title` (60 characters or fewer), a `caption` (the line on screen, lit word by word) and an optional `say` (the spoken form, when the caption has a symbol or a number that reads badly: "0.618" becomes "zero point six one eight").
+- **`do`** lists what the voice does, in spoken order. `at` is a phrase from the spoken line; the action starts on its first word. Without `at`, the action starts with the beat.
+  - `{"press": "four"}` clicks the button with that id. `"times": 2, "every": 0.9` clicks it again every 0.9 s.
+  - `{"set": "stride", "to": 6}` moves a slider or a menu to a value. A slider travels there in steps, so the picture changes on the way.
+  - `{"show": "jump"}` puts a ring around an element (a card, a readout) until the beat ends, and scrolls it into view on a phone.
+- **`expect`** lists what the page must show when the beat ends. The page self-test fails when the page shows something else, so a caption cannot state a wrong fact.
+  - `{"in": "jump", "text": "0 → 6 → 0 → 6"}`: the element with that id (or CSS selector) shows these words. Pictures and controls inside the element are not read.
+  - `{"count": "#jump .bars .zero", "is": 10}`: this many elements match the selector. Use it for a fact that is drawn, not written ("ten bars are empty").
+  - **Every number in a `title` or `caption` must be in an `expect` text of the same beat**, or be a value the beat sets (`to`, `times`). The build warns about a number that is not. If the page does not show the number ("about 7.4"), the caption must not say it: reword to what the page shows ("close to 7"). The build cannot see a number written as a word ("ten"), so check those by eye.
+- **`reset`** puts the page in the state the story starts from. The player runs `reset` and then every action up to the chosen time whenever the viewer jumps in time, so the page must depend only on its controls: use `kit.random(seed)`, never `Math.random()` or the wall clock, and do not press a `kit.play` button from the story (press a step button several times instead).
+- **Write the story from the page, not from memory.** First write the beats with their `do` actions and rough captions, and build a draft with `--say`. Then run `JSON.stringify(window.__cx.story())` in the browser pane: it plays the story without sound and lists, for each beat, the control values and the text lines the beat changed (`story(true)` lists every line). Write each caption and its `expect` from those lines ("partitions 0 and 6", "Only 2 of 12"). One beat makes one point and moves at most one control. The last beat hands the controls to the viewer.
+- The voice is the walkthrough skill's voice (Kokoro, offline). The build needs `uv` and the `walkthrough` folder next to this one; the first build downloads the voice model. `--check` makes no audio and still checks that every `at` phrase is in its line. `--say` uses the system voice.
+
 ### Page parts (classes from the shared stylesheet)
 
 | Class | Use |
@@ -183,9 +215,10 @@ Helpers that draw return a string; join the strings into the card's `innerHTML`.
 ```bash
 "${CLAUDE_SKILL_DIR}/cx" stride.concept.html            # writes stride.html next to the source
 "${CLAUDE_SKILL_DIR}/cx" stride.concept.html --check    # checks only, writes nothing
+"${CLAUDE_SKILL_DIR}/cx" stride.concept.html --say      # a narrated page with the system voice (a fast draft)
 ```
 
-Run `cx` from any folder; the page is written next to the source. `cx` prints one JSON line: `ok`, `out`, `kb` and `warnings`. Exit 2 means the header is wrong or the script does not parse. Fix every warning: an outside URL, a hard-coded colour, a font below 11 px, an `<svg>` without `viewBox`, `class="pic"` or a label, a page with no control, a page with no `.verdict`.
+Run `cx` from any folder; the page is written next to the source. `cx` prints one JSON line: `ok`, `out`, `kb` and `warnings` (and `narration`: beats, seconds, actions, `linesCached` and `linesSpoken`, for a narrated page; the page is about 10 KB larger for each second of voice). The voice keeps each spoken line in a cache, so a build speaks only the lines that changed: about 10 seconds for a new story, under 1 second when no line changed. `--no-cache` speaks every line again. Exit 2 means the header is wrong or the script does not parse. Fix every warning: an outside URL, a hard-coded colour, a font below 11 px, an `<svg>` without `viewBox`, `class="pic"` or a label, a page with no control, a page with no `.verdict`.
 
 ## 5. Verify in the browser pane, then hand over
 
@@ -193,8 +226,9 @@ Run `cx` from any folder; the page is written next to the source. `cx` prints on
 2. Run `JSON.stringify(window.__cx.selftest())`. It moves every slider to both ends, picks every menu option and clicks every button, and after each move it reports: script errors, a page that scrolls sideways, picture text that is cut off, overlaps other text, or is under 10 px on screen, a picture drawn more than 1.3 times its `viewBox` size, page text under 11 px, content wider than its card, and a control that changes nothing. `ok:true` is the bar to pass. Reload the page afterwards; the test leaves the controls moved.
 3. Run it four times: at desktop width (`resize_window` 1100×900) and at `mobile`, each in `colorScheme` light and dark. Then reset to `desktop`.
 4. Take one screenshot at desktop width and one at `mobile`, and look at them. The self-test cannot judge whether the picture explains the idea. Check: does the shape show the mechanism without its labels? Does the failure case look broken?
-5. Give the user the path. Say which control shows the idea best ("set the stride to 4").
-6. Publish it as an artifact only if the user wants to share it. The page is self-contained, so publish the HTML directly.
+5. For a narrated page, the self-test also plays the story without sound: it reports an action whose element is missing, a press or a move that changes nothing, a slider that cannot take the value, an `expect` the page does not meet, a story that gives a different page on its second run, and every picture problem in each state the voice makes (`checked.narration`, with `expectsChecked`). Then press Play once and listen to one beat: the self-test cannot hear a wrong pronunciation.
+6. Give the user the path. Say which control shows the idea best ("set the stride to 4").
+7. Publish it as an artifact only if the user wants to share it. The page is self-contained, so publish the HTML directly.
 
 ## Don'ts
 

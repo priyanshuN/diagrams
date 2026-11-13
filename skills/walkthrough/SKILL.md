@@ -10,6 +10,15 @@ The "video" is an HTML page, not an MP4. It is directed like a film:
 - **Captions light word by word**, and a box's name in the caption takes the box's colour.
 - **Boxes show what they hold.** A box's second line changes when the data lands in it.
 
+One scene gives several pictures, and the viewer switches between them while the voice goes on:
+
+| The viewer asks | The picture | Comes from |
+|---|---|---|
+| What talks to what? | Flow diagram with the camera | `diagram` (`graph`) |
+| Who waits for whom, in what order? | Sequence diagram | `diagram` (`sequenceDiagram`) |
+| What happens to my order? | "Item story": one record that changes, on a line of stops | the `item` of each step |
+| What happens when this part fails? | "What if…": the same flow with the broken part in red | `whatif` |
+
 It also beats a video in four ways:
 - **Arrows light up on the spoken word.** A cue lights the node or arrow when the voice says the matching word, not just at the start of the step.
 - **Predict pauses.** The page stops before a step and asks what happens next.
@@ -51,6 +60,13 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
   "recap": [
     {"text": "The shop saves the order before it charges the card.", "focus": ["shop"]},
     {"text": "A signed webhook, not the browser, marks the order paid.", "focus": ["pay", "shop"]}
+  ],
+  "whatif": [
+    {"q": "The card is declined",
+     "caption": "The provider refuses the charge. The shop marks the order failed, and nothing is shipped.",
+     "fail": {"edges": [["shop", "pay"]]}, "skip": ["warehouse"],
+     "focus": ["shop"], "state": {"shop": "order: failed"},
+     "src": "src/checkout/create-order.js:71"}
   ]
 }
 ```
@@ -58,9 +74,17 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 **The diagram**
 - `diagram` is Mermaid: `graph TD|LR` for a flow, `sequenceDiagram` for a sequence. `look` and `legend` follow the diagrams:flow rules. The same Mermaid also renders as chat text with `${CLAUDE_SKILL_DIR}/../flow/fd`.
 - `theme` is `clean` (the default: crisp lines) or `sketch` (hand-drawn on graph paper).
-- Use 4–8 nodes. A label has at most 3 words; a sub-label (`<br/>` second line) has at most 4.
+- Use 4–8 nodes for one path through code. A design picture (the next rule) can have up to 12, because the camera frames the lit part; above 8 boxes the phone picture uses two columns. A phone picture never shrinks below a readable size (labels 10.5 px, detail lines 10 px): when it is wider than the screen, it scrolls sideways in the overview and the test, and the camera frames it while the voice plays. If the self-test says the labels or the detail lines are small on a desktop, pack the `at` grid into fewer columns (stack the client above the gateway, put a fan-out in one column). A label has at most 3 words; a sub-label (`<br/>` second line) has at most 4.
+- **A design picture ("draw the HLD of X") is not a small flow. Do not shrink it to the happy path.** Before you draw, list what a design review would ask for, and put each one in the picture:
+  - the entry point (client, API gateway) and every service behind it, the read path as well as the write path;
+  - each store with its technology as the sub-label ("DynamoDB") and its tables or keys as `notes` in the look (`"notes": ["Jobs: id, userId, taskId", "Executions: time, jobId, status"]`);
+  - each queue or stream with the settings that make the design work as `notes` ("delay until execution time", "retry, exponential backoff");
+  - a fan-out drawn as 2 or 3 boxes when the point is that work runs in parallel;
+  - the arrow that closes the loop (the status written back).
+  If the user gives a reference picture, keep every box, table and note of the reference, and say which ones you left out and why. If there is no code and no reference, say in the `lead` that the design is generic and that the values are examples.
 - **Flow:** give `at` positions in the look whenever the flow branches, loops back or skips a node. Without them, nodes are placed in layers, which can render long and small. The phone layout ignores `at` and stacks nodes in the order the narration first lights them.
 - Give a decision's two outcomes different sides: one straight down, one straight right (for example `decide` at [2,1], `orders` at [3,1], `retry` at [2,2]). If the build warns that two arrows "run side by side", move a box with `at`.
+- Two boxes can have an arrow each way (the queue delivers a run to the worker, and the worker sends a retry back). Draw both arrows and label both: each label goes on the outer side of its own arrow. Make the return arrow dashed (`-.->`) so the main direction stays clear.
 - Draw the direction the *data* moves. If the worker reads a file from S3, the arrow is S3 → worker, not worker → S3. Label most arrows with the verb that travels them.
 - **Sequence:** use it when the order matters, or who waits for whom ("the customer sees processing before the payment is confirmed"). Steps light messages by number with `"msgs": [3]` instead of `"edges"`. Participants are the `focus` ids. On a phone the camera frames the lit message; with the camera off, the sequence keeps readable text and scrolls sideways, following the lit message.
 - The older format (`nodes`, `edges`, `groups` written as JSON) still builds. Do not mix it with `diagram`.
@@ -88,6 +112,22 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 - `recap` is 2–4 points, each one short sentence (under about 20 words), spoken after the last step while the camera shows the whole diagram. A point is a sentence, or `{"text": "...", "focus": ["box"], "edges": [["a", "b"]]}` to light its boxes as it is spoken.
 - Write what to remember, not a list of the steps. Use the same words as the captions.
 
+**Item story** (offered by itself when any step has an `item`; no extra fields)
+- The view shows the `item` as one large card on a line of stops. The stops are the boxes in the order the voice first reaches them.
+- Keep the same `name` while the thing is the same thing. The view then marks a field the step added as "new", and shows a changed value with the old value struck out.
+- Change the `name` only when the thing becomes another thing ("Raw email file" → "email_jobs row"). Each new name is one more form in the trail above the card.
+- Repeat the fields that still matter in each `item`. A field you leave out disappears from the card, and the viewer reads that as "removed".
+
+**What if** (`whatif`: 1–4 scenarios; flows only)
+- Each scenario replays the same diagram with one part broken. The viewer picks it from the "What if…" row under the player. It is not part of the main walk.
+- `q` is the scenario as the viewer picks it: 48 characters or fewer, a plain statement ("The card is new", "S3 is down for a moment").
+- `caption` is what the voice says, under about 40 words: what breaks, what the system does next, and where the run ends. `title` is an optional headline.
+- `fail` is the part that breaks: `{"edges": [["a", "b"]]}` for an arrow, `{"focus": ["box"]}` for a box. It is drawn red, with a cross on a broken arrow.
+- `skip` lists the boxes this run never reaches. They are drawn faint.
+- `focus`, `edges`, `state`, `carry` and `cues` light the path the run takes instead, as in a step. Put the real reason code in `state` on the box where the run ends (`{"review": "NEW_ACCOUNT"}`).
+- A scenario states a fact about the system, so check the code before you write one, and give its `src`. Do not guess a failure path.
+- Pick failures that teach the design: one check that fails, one outage that passes, one loss that cannot be undone. Each scenario adds about 10 seconds of audio to the page.
+
 **Content rules**
 - Use real names and numbers from the work, never invented samples.
 - Use the same word for the same thing in every step.
@@ -112,7 +152,8 @@ Write the scene in a working folder (not inside the plugin) and serve that folde
 "${CLAUDE_SKILL_DIR}/nw" my-scene.json 2>/dev/null
 ```
 
-The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `recap`, `cues`, `kb` and `warnings`.
+The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `voice`, `steps`, `recap`, `whatif`, `cues`, `kb` and `warnings`.
+- **Voice cache:** each spoken line is kept in `~/.cache/narrated-walkthrough/lines`, keyed by its spoken text, the voice, the speed and the voice package version. A build speaks only the lines that changed (`voice: {"cached": 12, "spoken": 1}`), so a layout or look change builds in under a second. A line that no build used for 30 days is removed. `--no-cache` (or `NW_NO_CACHE=1`) speaks every line again.
 - **Exit 2:** a scene error. **Exit 3:** Kokoro failed. A build never falls back to the system voice silently. Pass `--allow-fallback` (or `--say`) only if the user accepts the robotic voice: macOS `say`, or `espeak-ng` on Linux when it is installed.
 - **Voices:** `af_heart` downloads with the model. Any other voice (`am_michael`, `bf_emma`, `bm_george`) downloads a small voice file on first use, which needs the network.
 
@@ -123,6 +164,7 @@ The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `reca
    - what each one lit;
    - a `state` text wider than its box;
    - `camera.stepLabelPx`, the smallest label size in a camera frame;
+   - `item`, the number of stops and forms of the "Item story" view (the checks themselves run in the diagram view);
    - arrows that cross a node;
    - text wider than its box;
    - the on-screen label size, which must be at least 10 px;
@@ -131,7 +173,7 @@ The build prints one JSON line: `ok`, `out`, `engine`, `seconds`, `steps`, `reca
    - two arrows that share no box but run side by side (flows only).
    `ok:true` is the bar to pass.
 3. Run it once at desktop width (`resize_window` 1100×900) and once at `mobile`, then reset to `desktop`. Take one screenshot of each layout.
-4. Give the user the path. Mention `#3`-style deep links, the number keys, the speed menu, the "Follow the voice" switch, "Test me" and "Copy as notes", which copies the walkthrough as Markdown notes.
+4. Give the user the path. Mention `#3`-style deep links, the number keys, the speed menu, the "Follow the voice" switch, the "Diagram / Item story" switch, the "What if…" buttons, "Test me" and "Copy as notes", which copies the walkthrough as Markdown notes.
    The browser pane must be visible while you judge motion: a hidden pane does not run the camera or the fades, so a screenshot can show a frame that is half moved. `selftest()` moves the camera without animation and is safe in a hidden pane.
 5. Publish it as an artifact only if the user wants to share it. The page is self-contained, so publish the HTML directly.
 
