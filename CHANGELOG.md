@@ -2,6 +2,18 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
+## 0.6.0 (2026-11-13)
+
+- Walkthrough: a second view, "Item story". The same scene is drawn as one record that changes: the boxes become a line of stops, the `item` is a large card, a field a step adds is marked "new", and a changed value shows the old value struck out. It needs no new scene fields and is offered when any step has an `item`. A switch changes between "Diagram" and "Item story" while the voice goes on.
+- Walkthrough: "What if…" scenarios (`whatif`, 1 to 4, flows only). The viewer picks a failure and the same diagram replays with the broken part in red, a cross on a broken arrow, and the boxes the run never reaches drawn faint. Each scenario is its own voice clip after the main walk; the main walk stops before them.
+- Walkthrough: the build passes the two ends of every arrow and message to the page, so the item story has a stop for every box an arrow touches, in a sequence too.
+- Concept: a narrated page. A `narration` block in the source gives the page a voice (the walkthrough voice). The voice reads short beats, and on the spoken word the page presses its own buttons and moves its own sliders, puts a ring around the part it talks about, and lights the caption word by word. A viewer who touches a control takes over; "Resume" puts the story state back. The page self-test plays the story without sound and checks every state it makes. New files: `skills/concept/narrate.{js,css,html}` and `skills/walkthrough/voice.py`.
+- Concept: checked captions. A beat's `expect` lists what the page must show when the beat ends (words in an element, or a count of elements), and the page self-test fails when the page differs. The build warns about a number in a caption that no `expect` of the beat has. `window.__cx.story()` lists the text each beat changes, so captions are written from the page.
+- Voice cache: each spoken line is kept in `~/.cache/narrated-walkthrough/lines`, so a walkthrough or narrated concept build speaks only the lines that changed. A rebuild with no changed line takes under a second (before: 10 to 60 seconds). `--no-cache` turns it off.
+- Flow pictures: an arrow label now stays off other arrows. It tries the middle of its arrow, then a third from each end, and takes the first spot clear of boxes, labels and other arrows. Two arrows between the same two boxes (a request and its reply, a delivery and its retry) can now both have a label; before, the second label had "no clear spot". A label that already had a clear spot does not move.
+- Flow pictures: a box can hold `notes`, 1 to 8 detail lines under its name (the fields of a table, the settings of a queue). The box and its row grow to fit. A picture with more than 8 boxes uses two columns on a phone, and a phone picture never shrinks below a readable size: a picture wider than the screen scrolls sideways, as a sequence already did. The walkthrough self-test now measures the detail lines too (`detailPx`). The walkthrough guide now tells Claude how to draw a design picture (an HLD) at full detail instead of a small happy-path flow.
+- Walkthrough: the page remembers the chosen view (Diagram or Item story) for each page, not for every page on the same site.
+
 ## 0.5.0 (2026-11-13)
 
 - Walkthrough: a camera follows the voice. The frame moves to the boxes a step or cue names (never closer than 1.2 times the drawn size, never farther than 0.75 times), a box or arrow appears when the voice first names it, and a box cut by the frame fades out. The overview and "Test me" show the whole diagram. A "Follow the voice" switch turns the camera off.

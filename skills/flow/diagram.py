@@ -37,12 +37,12 @@ COLORS = {'emerald', 'sky', 'amber', 'slate', 'rose', 'teal'}
 TONES = {'good': 'emerald', 'warn': 'amber', 'bad': 'rose'}
 EDGE_KINDS = {'sync', 'async', 'reply'}
 THEMES = {'sketch', 'clean'}
-NODE_KEYS = {'id', 'label', 'sub', 'at', 'kind', 'color'}
+NODE_KEYS = {'id', 'label', 'sub', 'at', 'kind', 'color', 'notes'}
 EDGE_KEYS = {'from', 'to', 'label', 'kind', 'tone', 'mark'}
 # diff marks from diagrams:trace at the start of a sequence message: colour the change, fade the rest
 DIFF_MARKS = {'[+]': ('good', 'add'), '[-]': ('bad', 'gone'), '[~]': ('warn', 'chg')}
 GROUP_KEYS = {'label', 'nodes', 'color', 'id'}
-LOOK_NODE_KEYS = {'at', 'color', 'kind', 'sub', 'label'}
+LOOK_NODE_KEYS = {'at', 'color', 'kind', 'sub', 'label', 'notes'}
 
 
 class DiagramError(Exception):
@@ -184,6 +184,14 @@ def validate_diagram(d):
             errs.append(f'node "{n["id"]}": color must be one of {sorted(COLORS)}')
         if n.get('kind', 'service') not in NODE_KINDS:
             errs.append(f'node "{n["id"]}": kind must be one of {sorted(NODE_KINDS)}')
+        if 'notes' in n:
+            nt = n['notes']
+            if not (isinstance(nt, list) and 1 <= len(nt) <= NOTE_MAX and all(isinstance(t, str) and t.strip() for t in nt)):
+                errs.append(f'node "{n["id"]}": "notes" must be a list of 1 to {NOTE_MAX} short text lines')
+            elif n.get('kind') == 'decision':
+                errs.append(f'node "{n["id"]}": a decision cannot have "notes"')
+            else:
+                errs += [f'node "{n["id"]}": the note "{t}" is longer than {NOTE_CHARS} characters' for t in nt if len(t) > NOTE_CHARS]
         if 'at' in n and not (isinstance(n['at'], list) and len(n['at']) == 2 and all(isinstance(v, int) and v >= 0 for v in n['at'])):
             errs.append(f'node "{n["id"]}": "at" must be [col, row] with non-negative integers')
     if d.get('type', 'flow') == 'flow':
@@ -246,8 +254,20 @@ def text_w(s, size, bold=False):
     return len(s) * size * (0.6 if bold else 0.56)
 
 
+# A box can hold "notes": short detail lines under its name (the fields of a table, the settings of a queue).
+# The box grows downwards, its row grows with it, and the other boxes of the row stay centred on the same line.
+NOTE_MAX, NOTE_CHARS, NOTE_HEAD, NOTE_LH = 8, 36, 58, 15
+PHONE_ONE_COL, PHONE_MIN_SCALE, PHONE_MIN_NOTES = 8, 0.7, 0.87
+
+
+def node_h(n):
+    k = len(n.get('notes') or [])
+    return NOTE_HEAD + 13 + NOTE_LH * k if k else H
+
+
 def layout(nodes, cols, use_at, gx=GX):
-    W = max(170, min(260, max(max(text_w(n['label'], 15, True), text_w(n.get('sub', ''), 12)) for n in nodes) + 28))
+    W = max(170, min(260, max(max([text_w(n['label'], 15, True), text_w(n.get('sub', ''), 12)] +
+                                  [text_w(t, 11.5) - 4 for t in n.get('notes') or []]) for n in nodes) + 28))
     cells = {}
     if use_at and all('at' in n for n in nodes):
         cells = {n['id']: tuple(n['at']) for n in nodes}
@@ -257,9 +277,12 @@ def layout(nodes, cols, use_at, gx=GX):
             cells[n['id']] = (cols - 1 - c if r % 2 else c, r)
     ncols = max(c for c, _ in cells.values()) + 1
     nrows = max(r for _, r in cells.values()) + 1
-    pos = {k: (PADX + c * (W + gx), PADY + r * (H + GY), W, H) for k, (c, r) in cells.items()}
+    hs = {n['id']: node_h(n) for n in nodes}
+    row_h = [max([hs[k] for k, (_, r) in cells.items() if r == row] or [H]) for row in range(nrows)]
+    top = [PADY + sum(row_h[:r]) + r * GY for r in range(nrows)]
+    pos = {k: (PADX + c * (W + gx), top[r] + (row_h[r] - hs[k]) / 2, W, hs[k]) for k, (c, r) in cells.items()}
     width = PADX + ncols * W + (ncols - 1) * gx + PADR
-    height = PADY + nrows * H + (nrows - 1) * GY + 30
+    height = top[-1] + row_h[-1] + 30
     return pos, cells, width, height
 
 
@@ -468,7 +491,7 @@ def build_svg(scene, cols, use_at, tag, warnings):
         edges_out.append(f'<path class="edge k-{ed.get("kind", "sync")} c-{col}{skip}" data-e="{e(ed["key"])}" d="{d}" marker-end="url(#arr-{tag})"/>')
         if ed.get('label'):
             if pts and len(pts) >= 2:
-                lx, ly, anchor, lb, clear = place_label(pts, ed['label'], blocked + elabel_boxes)
+                lx, ly, anchor, lb, clear = place_label(pts, ed['label'], blocked + elabel_boxes, line_boxes(routes, ed['key']))
                 if not clear:
                     fix = 'shorten it or space the boxes' if use_at else 'shorten it, or ' + reorder_hint([ed['from'], ed['to']])
                     warnings.append(f'[{tag}] the label of edge {ed["key"]} has no clear spot on its arrow; {fix}')
@@ -488,7 +511,14 @@ def build_svg(scene, cols, use_at, tag, warnings):
         if text_w(n['label'], 15, True) > nw - 16:
             warnings.append(f'[{tag}] node "{n["id"]}" label is probably wider than its box; shorten it')
         sub = f'<text class="sub" x="{x + nw / 2:.1f}" y="{y + 44:.1f}">{e(n.get("sub", ""))}</text>' if n.get('sub') else ''
-        ty = y + 28 if n.get('sub') else y + nh / 2 + 5
+        notes = n.get('notes') or []
+        ty = y + 28 if n.get('sub') else y + (NOTE_HEAD if notes else nh) / 2 + 5
+        if notes:                                  # the name stays at the top; the detail lines sit under a divider
+            wide = [t for t in notes if text_w(t, 11.5) > nw - 20]
+            if wide:
+                warnings.append(f'[{tag}] node "{n["id"]}": the note "{wide[0]}" is probably wider than its box; shorten it')
+            sub += f'<line class="ndiv" x1="{x + 10:.1f}" y1="{y + NOTE_HEAD:.1f}" x2="{x + nw - 10:.1f}" y2="{y + NOTE_HEAD:.1f}"/>'
+            sub += ''.join(f'<text class="nt" x="{x + 14:.1f}" y="{y + NOTE_HEAD + 17 + NOTE_LH * i:.1f}">{e(t)}</text>' for i, t in enumerate(notes))
         kind = n.get('kind', 'service')
         if kind == 'decision':
             shape = (f'<polygon class="shape" points="{x:.1f},{y + nh / 2:.1f} {x + nw / 2:.1f},{y - 6:.1f} '
@@ -501,7 +531,11 @@ def build_svg(scene, cols, use_at, tag, warnings):
                         f'<text class="lbl" x="{x + nw / 2:.1f}" y="{ty:.1f}">{e(n["label"])}</text>{sub}</g>')
     x0 = min(b[0] for b in boxes) - 12; y0 = min(b[1] for b in boxes) - 12
     x1 = max(b[0] + b[2] for b in boxes) + 12; y1 = max(b[1] + b[3] for b in boxes) + 12
-    head = (f'<svg class="dia {tag}" style="max-width:{(x1 - x0) * 1.15:.0f}px" viewBox="{x0:.0f} {y0:.0f} {x1 - x0:.0f} {y1 - y0:.0f}" role="img" aria-label="{e(scene.get("title", "diagram"))}">'
+    # a phone picture never shrinks below 0.7 of its drawn size (a 15 px label stays 10.5 px), or 0.87 when a box
+    # has detail lines (11.5 px stays 10 px): the canvas scrolls sideways
+    scale = PHONE_MIN_NOTES if any(n.get('notes') for n in nodes) else PHONE_MIN_SCALE
+    floor = f';min-width:{(x1 - x0) * scale:.0f}px' if tag == 'phone' else ''
+    head = (f'<svg class="dia {tag}" style="max-width:{(x1 - x0) * 1.15:.0f}px{floor}" viewBox="{x0:.0f} {y0:.0f} {x1 - x0:.0f} {y1 - y0:.0f}" role="img" aria-label="{e(scene.get("title", "diagram"))}">'
             f'<defs><marker id="arr-{tag}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
             'orient="auto-start-reverse"><path d="M2,1.5 L9,5 L2,8.5" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>')
     return head + ''.join(groups + edges_out + node_out + labels) + '</svg>'
@@ -583,24 +617,35 @@ def side_by_side(paths):
     return sorted(found)
 
 
-def place_label(pts, text, blocked):
+def line_boxes(routes, skip):
+    """A thin box around every segment of every routed arrow except `skip`, so a label can stay off other arrows."""
+    return [(min(a[0], b[0]) - 3, min(a[1], b[1]) - 3, abs(a[0] - b[0]) + 6, abs(a[1] - b[1]) + 6)
+            for k, pts in routes.items() if k != skip for a, b in zip(pts, pts[1:])]
+
+
+def place_label(pts, text, blocked, lines=()):
     """Put an arrow label on its route: above a horizontal segment, or beside a vertical one.
-    Longest segment first; the first spot clear of boxes and other labels wins. Returns (x, y, anchor, box, clear)."""
+    The middle of each segment comes first (longest segment first), then a third from each end, so the two
+    labels of a pair of arrows between the same two boxes each get a spot. The first spot clear of boxes,
+    other labels and other arrows (`lines`) wins. If there is none, the first spot clear of boxes and labels
+    wins, and the label then lies on another arrow. Returns (x, y, anchor, box, clear)."""
     lw = text_w(text, 11.5)
     segs = sorted(zip(pts, pts[1:]), key=lambda s: -math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]))
     tries = []
-    for (x0, y0), (x1, y1) in segs:
-        if abs(y0 - y1) < 0.5:                    # horizontal: centred above, then below
-            mx = (x0 + x1) / 2
-            tries += [(mx, y0 - 6, 'middle', (mx - lw / 2, y0 - 18, lw, 16)),
-                      (mx, y0 + 16, 'middle', (mx - lw / 2, y0 + 4, lw, 16))]
-        else:                                     # vertical: right of the line, then left
-            my = (y0 + y1) / 2 + 4
-            tries += [(x0 + 7, my, 'start', (x0 + 7, my - 12, lw, 16)),
-                      (x0 - 7, my, 'end', (x0 - 7 - lw, my - 12, lw, 16))]
-    for t in tries:
-        if not any(overlaps(t[3], o) for o in blocked):
-            return t + (True,)
+    for f in (0.5, 0.3, 0.7):
+        for (x0, y0), (x1, y1) in segs:
+            if abs(y0 - y1) < 0.5:                # horizontal: above, then below
+                mx = x0 + (x1 - x0) * f
+                tries += [(mx, y0 - 6, 'middle', (mx - lw / 2, y0 - 18, lw, 16)),
+                          (mx, y0 + 16, 'middle', (mx - lw / 2, y0 + 4, lw, 16))]
+            else:                                 # vertical: right of the line, then left
+                my = y0 + (y1 - y0) * f + 4
+                tries += [(x0 + 7, my, 'start', (x0 + 7, my - 12, lw, 16)),
+                          (x0 - 7, my, 'end', (x0 - 7 - lw, my - 12, lw, 16))]
+    for avoid in (list(blocked) + list(lines), blocked):
+        for t in tries:
+            if not any(overlaps(t[3], o) for o in avoid):
+                return t + (True,)
     return tries[0] + (False,)
 
 
@@ -816,7 +861,8 @@ def render_pair(d, warnings, theme='clean', cols=None):
     desk = render(d, 'desk', warnings, theme, cols, True)
     if d.get('type') == 'sequence':
         return desk, render(d, 'phone', warnings, theme)
-    return desk, render(dict(d, nodes=story_order(d)), 'phone', warnings, theme, 1, False)
+    # a large picture (more than 8 boxes) gets two phone columns: one column makes arrows that skip many boxes
+    return desk, render(dict(d, nodes=story_order(d)), 'phone', warnings, theme, 1 if len(d['nodes']) <= PHONE_ONE_COL else 2, False)
 
 
 def legend_html(legend):

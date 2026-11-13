@@ -1,0 +1,26 @@
+/* The narration bar of a narrated concept page: it stays at the top while the voice moves the controls below it. */
+.nar{position:sticky;top:8px;z-index:5;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:10px 14px 12px;margin:0 0 16px;box-shadow:0 4px 18px -10px color-mix(in srgb,var(--ink) 45%,transparent)}
+.nar-row{display:flex;align-items:center;gap:8px}
+.nar-play{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:600;min-width:74px}
+.nar-play:hover{background:color-mix(in srgb,var(--acc) 86%,var(--ink))}
+.nar-step{padding:6px 10px;line-height:1.2}
+.nar-head{flex:1;min-width:0;display:flex;flex-direction:column;margin-left:6px}
+.nar-head>span{font-size:12px;line-height:1.35;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nar-head em{font-style:normal;font-weight:600;color:var(--acc)}
+.nar-head b{font-size:15px;line-height:1.35;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nar-time{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nar-cap{margin:8px 0 10px;font-size:15px;line-height:1.5;max-width:86ch}
+.nar-cap .w{color:color-mix(in srgb,var(--mut) 62%,var(--surf));transition:color .18s}.nar-cap .w.on{color:var(--ink)}
+.nar-cap.hint{color:var(--mut)}
+.nar-prog{position:relative;height:6px;border-radius:3px;background:var(--line);cursor:pointer;touch-action:none}
+.nar-prog::before{content:"";position:absolute;inset:-8px 0}
+.nar-prog i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--acc);pointer-events:none}
+.nar-prog u{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--surf);pointer-events:none}
+.nar-note{margin:8px 0 0;font-size:13px;line-height:1.4;color:var(--warn)}
+.nar-note[hidden]{display:none}
+/* what the voice points at, and the control it just moved */
+.nar-show{outline:2px solid var(--acc);outline-offset:6px;border-radius:8px;scroll-margin:calc(var(--narh,140px) + 24px) 0 24px}
+@keyframes narpress{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc) 60%,transparent)}to{box-shadow:0 0 0 14px transparent}}
+.nar-press{outline:2px solid var(--acc);outline-offset:3px;border-radius:8px;animation:narpress .7s ease-out}
+/* phone: the beat title gets its own line under the buttons */
+@media (max-width:520px){.nar{padding:10px 12px 12px}.nar-cap{font-size:14.5px}.nar-row{flex-wrap:wrap}.nar-head{order:5;flex-basis:100%;margin:6px 0 0}.nar-time{margin-left:auto}}

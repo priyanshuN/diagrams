@@ -28,13 +28,14 @@ KOKORO_TORCH = 'hexgrad/Kokoro-82M'
 # Apple silicon runs Kokoro on MLX; every other machine runs the same model on PyTorch (CPU).
 USE_MLX = sys.platform == 'darwin' and platform.machine() == 'arm64'
 VOICE_RE = re.compile(r'^[abjzefhip][fm]_[a-z]+$')
-VERSION = 6
+VERSION = 7
 
 TOP_KEYS = {'title', 'lead', 'voice', 'speed', 'cols', 'lexicon', 'repo', 'nodes', 'groups', 'edges', 'steps', 'legend',
-            'diagram', 'look', 'theme', 'recap'}
+            'diagram', 'look', 'theme', 'recap', 'whatif'}
 STEP_KEYS = {'say', 'caption', 'title', 'focus', 'edges', 'msgs', 'cues', 'ask', 'src', 'item', 'carry', 'state'}
 CUE_KEYS = {'at', 'focus', 'edges', 'msgs', 'item', 'carry', 'state'}
 RECAP_KEYS = {'text', 'focus', 'edges', 'msgs'}
+WHATIF_KEYS = {'q', 'title', 'caption', 'say', 'fail', 'skip', 'focus', 'edges', 'state', 'carry', 'cues', 'src'}
 _edge_key = D._edge_key
 
 
@@ -239,6 +240,37 @@ def validate(scene):
                 if not (isinstance(p.get('text'), str) and norm_words(p['text'])):
                     errs.append(f'{w}: needs "text", one spoken sentence')
                 check_refs(w, p)
+    if 'whatif' in scene:
+        wf = scene['whatif']
+        if seq:
+            errs.append('"whatif" replays a flow with one part broken; a sequence has no "whatif" yet')
+        elif not (isinstance(wf, list) and 1 <= len(wf) <= 4 and all(isinstance(x, dict) for x in wf)):
+            errs.append('"whatif" must be a list of 1 to 4 scenarios: {"q": "The API is down", "caption": "...", "fail": {...}}')
+        else:
+            for j, x in enumerate(wf):
+                w = f'whatif {j + 1}'
+                for k in set(x) - WHATIF_KEYS:
+                    errs.append(f'{w}: unknown key "{k}"')
+                if not (isinstance(x.get('q'), str) and 0 < len(x['q']) <= 48):
+                    errs.append(f'{w}: needs "q", the scenario as the viewer picks it (48 characters or fewer)')
+                if not (x.get('say') or x.get('caption')):
+                    errs.append(f'{w}: needs "caption", what the voice says happens')
+                if 'title' in x and not (isinstance(x['title'], str) and 0 < len(x['title']) <= 60):
+                    errs.append(f'{w}: "title" must be a short headline (60 characters or fewer)')
+                fail = x.get('fail')
+                if not (isinstance(fail, dict) and set(fail) <= {'focus', 'edges'} and (fail.get('focus') or fail.get('edges'))):
+                    errs.append(f'{w}: needs "fail", the part that breaks: {{"edges": [["a", "b"]]}} or {{"focus": ["box"]}}')
+                else:
+                    check_refs(f'{w} fail', fail)
+                if not (isinstance(x.get('skip', []), list) and all(n in idset for n in x.get('skip', []))):
+                    errs.append(f'{w}: "skip" must be a list of box ids that this run never reaches')
+                check_refs(w, x)
+                for k, c in enumerate(x.get('cues', [])):
+                    for key in set(c) - (CUE_KEYS - {'item'}):
+                        errs.append(f'{w} cue {k + 1}: unknown key "{key}"')
+                    if not c.get('at') or not norm_words(str(c['at'])):
+                        errs.append(f'{w} cue {k + 1}: "at" must contain at least one word from the spoken line')
+                    check_refs(f'{w} cue {k + 1}', c)
     if scene.get('voice') and not VOICE_RE.match(scene['voice']):
         errs.append(f'voice "{scene["voice"]}" is not a Kokoro voice name like af_heart')
     if errs:
@@ -299,13 +331,65 @@ def kokoro_pipeline(lang):
         return KPipeline(lang_code=lang, repo_id=KOKORO_TORCH)
 
 
-def kokoro_synth(lines, voice, speed):
-    """-> list of (float32 audio, [(word, start_s, end_s)])"""
+# The voice cache: one file for each spoken line, so a build makes audio only for the lines that changed.
+CACHE_DIR = os.path.join(os.environ.get('XDG_CACHE_HOME') or os.path.expanduser('~/.cache'), 'narrated-walkthrough', 'lines')
+CACHE_DAYS = 30
+CACHE = {'on': not os.environ.get('NW_NO_CACHE'), 'hit': 0, 'made': 0}
+
+
+def _cache_path(line, voice, speed):
+    """The cache file of one spoken line. The key holds everything that changes the sound."""
+    import hashlib
+    from importlib import metadata
+    pkg = 'mlx-audio' if USE_MLX else 'kokoro'
+    try:
+        ver = metadata.version(pkg)
+    except metadata.PackageNotFoundError:
+        ver = '?'
+    key = json.dumps([2, KOKORO_MLX if USE_MLX else KOKORO_TORCH, pkg, ver, voice, round(float(speed), 3), line])
+    return os.path.join(CACHE_DIR, hashlib.sha256(key.encode()).hexdigest()[:32] + '.npz')
+
+
+def _cache_get(path):
     import numpy as np
+    try:
+        with np.load(path) as z:
+            audio, words = z['audio'].astype(np.float32) / 32767, json.loads(str(z['words']))
+        os.utime(path)                               # a line in use stays in the cache
+        return audio, [tuple(w) for w in words]
+    except Exception:
+        return None
+
+
+def _cache_put(path, audio, words):
+    import numpy as np, time
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        tmp = path + f'.{os.getpid()}.tmp.npz'
+        np.savez_compressed(tmp, audio=(np.clip(audio, -1, 1) * 32767).astype(np.int16), words=json.dumps(words))
+        os.replace(tmp, path)
+        old = time.time() - CACHE_DAYS * 86400       # drop the lines that no build used for 30 days
+        for f in os.scandir(CACHE_DIR):
+            if f.name.endswith('.npz') and f.stat().st_mtime < old:
+                os.unlink(f.path)
+    except OSError as ex:
+        log(f'voice cache not written: {ex}')
+
+
+def kokoro_synth(lines, voice, speed):
+    """-> list of (float32 audio, [(word, start_s, end_s)]). A line that an earlier build spoke with the same
+    voice and speed comes from the voice cache; the model loads only when a line is new."""
+    import numpy as np
+    paths = [_cache_path(line, voice, speed) for line in lines]
+    out = [_cache_get(p) if CACHE['on'] else None for p in paths]
+    CACHE['hit'] += sum(o is not None for o in out)
+    if all(o is not None for o in out):
+        return out
     pipe = kokoro_pipeline(voice[0])
     with contextlib.redirect_stdout(sys.stderr):
-        out = []
-        for line in lines:
+        for i, line in enumerate(lines):
+            if out[i] is not None:
+                continue
             chunks, words, offset = [], [], 0.0
             for r in pipe(line, voice=voice, speed=speed):
                 a = r.audio.detach().cpu().numpy() if hasattr(r.audio, 'detach') else r.audio  # torch tensor or MLX array
@@ -314,7 +398,10 @@ def kokoro_synth(lines, voice, speed):
                     if tk.start_ts is not None and re.search(r'\w', tk.text):
                         words.append((tk.text, offset + tk.start_ts, offset + (tk.end_ts or tk.start_ts)))
                 chunks.append(a); offset += len(a) / SR
-            out.append((np.concatenate(chunks) if chunks else np.zeros(SR // 2, np.float32), words))
+            out[i] = (np.concatenate(chunks) if chunks else np.zeros(SR // 2, np.float32), words)
+            CACHE['made'] += 1
+            if CACHE['on']:
+                _cache_put(paths[i], *out[i])
     return out
 
 
@@ -477,7 +564,10 @@ def main():
     ap.add_argument('--check', action='store_true', help='validate, check layout, preview pronunciation; no audio')
     ap.add_argument('--say', action='store_true', help='use the system voice (macOS say, else espeak-ng)')
     ap.add_argument('--allow-fallback', action='store_true', help='use the system voice if Kokoro fails')
+    ap.add_argument('--no-cache', action='store_true', help='speak every line again; do not read or write the voice cache')
     args = ap.parse_args()
+    if args.no_cache:
+        CACHE['on'] = False
 
     try:
         scene = validate(json.load(open(args.scene)))
@@ -495,10 +585,14 @@ def main():
     speed = args.speed or scene.get('speed', 1.0)
     lex = load_lexicon(scene)
     recap = scene.get('recap', [])
+    whatif = scene.get('whatif', [])
     nsteps = len(scene['steps'])
-    # one spoken line for each step, then one for each recap point
-    spoken = [speakable(s.get('say') or s['caption'], lex) for s in scene['steps']] + [speakable(p['text'], lex) for p in recap]
-    where = [f'step {i + 1}' for i in range(nsteps)] + [f'recap point {j + 1}' for j in range(len(recap))]
+    nmain = nsteps + len(recap)
+    # one spoken line for each step, then one for each recap point, then one for each what-if scenario
+    spoken = ([speakable(s.get('say') or s['caption'], lex) for s in scene['steps']] + [speakable(p['text'], lex) for p in recap]
+              + [speakable(x.get('say') or x['caption'], lex) for x in whatif])
+    where = ([f'step {i + 1}' for i in range(nsteps)] + [f'recap point {j + 1}' for j in range(len(recap))]
+             + [f'whatif {j + 1}' for j in range(len(whatif))])
 
     warnings = []
     theme = scene.get('theme', 'clean')
@@ -508,7 +602,7 @@ def main():
         left = re.findall(r'[^\w\s.,;:!?\'"()\[\]/ˈˌ$%+=-]', re.sub(r'\[[^\]]+\]\(/[^)]*/\)', '', line))
         if left:
             warnings.append(f'{where[i]}: spoken line still has symbols {sorted(set(left))}; add them to the lexicon')
-        if i >= nsteps and len(line.split()) > 22:
+        if nsteps <= i < nmain and len(line.split()) > 22:
             warnings.append(f'{where[i]}: has {len(line.split())} words; a recap point is one short sentence (aim for under 20)')
         elif len(line.split()) > 45:
             warnings.append(f'{where[i]}: spoken line has {len(line.split())} words; split the step (aim for under 40)')
@@ -522,13 +616,14 @@ def main():
         for n in scene['nodes']:
             if n['id'] not in named:
                 warnings.append(f'box "{n["id"]}" is not named by any step ("focus" or a lit edge), so the walk never shows it')
-    for i, s in enumerate(scene['steps']):
+    for label, s in [(f'step {i + 1}', s) for i, s in enumerate(scene['steps'])] + [(f'whatif {j + 1}', x) for j, x in enumerate(whatif)]:
         if len(s.get('title', '').split()) > 8:
-            warnings.append(f'step {i + 1}: "title" has {len(s["title"].split())} words; a headline has 8 or fewer')
+            warnings.append(f'{label}: "title" has {len(s["title"].split())} words; a headline has 8 or fewer')
         for part in [s] + s.get('cues', []):
             for n, v in (part.get('state') or {}).items():
                 if D.text_w(v, 12) > box_w - 16:
-                    warnings.append(f'step {i + 1}: state "{v}" is probably wider than the box "{n}"; shorten it')
+                    warnings.append(f'{label}: state "{v}" is probably wider than the box "{n}"; shorten it')
+    wsrcs = [resolve_src(scene, nmain + j, x['src'], warnings) if x.get('src') else [] for j, x in enumerate(whatif)]
 
     if args.check:
         pipe = kokoro_pipeline(voice[0])
@@ -547,6 +642,7 @@ def main():
                        if t.phonemes and (NOTABLE.search(t.text) or t.text in lex)]
             preview.append({'step': i + 1 if i < nsteps else where[i], 'say': line, 'check_these': notable})
         errors += place_cues(scene, spoken, words_per_step[:nsteps], lex)[1]
+        errors += [e.replace('step ', 'whatif ', 1) for e in place_cues({'steps': whatif}, spoken[nmain:], words_per_step[nmain:], lex)[1]]
         print(json.dumps({'ok': not warnings and not errors, 'errors': errors, 'warnings': warnings,
                           'pronunciation': preview}, ensure_ascii=False, indent=1))
         sys.exit(2 if errors else 0)
@@ -566,6 +662,8 @@ def main():
             synth = fallback_synth(spoken)
 
     placed, errors = place_cues(scene, spoken, [w for _, w in synth[:nsteps]], lex)
+    wplaced, werrors = place_cues({'steps': whatif}, spoken[nmain:], [w for _, w in synth[nmain:]], lex)
+    errors += [e.replace('step ', 'whatif ', 1) for e in werrors]
     if errors:
         log('cue errors:\n' + '\n'.join(errors))
         print(json.dumps({'ok': False, 'error': 'cue errors', 'errors': errors})); sys.exit(2)
@@ -594,9 +692,21 @@ def main():
                       'cues': [{'t': p['t'], 'focus': p['focus'], 'edges': p['edges'], 'item': None, 'carry': None, 'state': None}
                                for p in pts[1:]],
                       'ask': None, 'src': [], 'item': None, 'carry': None})
+    main_seconds = round(t, 2)
+    # each what-if scenario is one more clip after the main walk. The page plays it only when the viewer picks it.
+    for j, (x, (clip, words)) in enumerate(zip(whatif, synth[nmain:])):
+        caption = x.get('caption') or x['say']
+        cues = [{'t': round(t + words[k][1], 3), 'focus': c.get('focus', []), 'edges': lit_keys(c), 'item': None,
+                 'carry': c.get('carry'), 'state': c.get('state')} for c, k in wplaced[j]]
+        steps.append({'t': round(t, 3), 'whatif': True, 'q': x['q'], 'title': x.get('title') or x['q'], 'caption': caption,
+                      'wt': caption_times(caption, words, t, len(clip) / SR),
+                      'fail': {'focus': x['fail'].get('focus', []), 'edges': lit_keys(x['fail'])}, 'skip': x.get('skip', []),
+                      'focus': x.get('focus', []), 'edges': lit_keys(x), 'state': x.get('state'), 'cues': cues,
+                      'ask': None, 'src': wsrcs[j], 'item': None, 'carry': x.get('carry')})
+        chunks += [clip, gap]; t += (len(clip) + len(gap)) / SR
     mime, data = encode(np.concatenate(chunks))
 
-    meta = {'version': VERSION, 'seconds': round(t, 2), 'engine': engine, 'built': datetime.date.today().isoformat(),
+    meta = {'version': VERSION, 'seconds': main_seconds, 'total': round(t, 2), 'engine': engine, 'built': datetime.date.today().isoformat(),
             'sha': git_sha(scene), 'repo': os.path.basename(os.path.expanduser(scene['repo'])) if scene.get('repo') else None}
     labels = [n['label'] for n in scene['nodes']]
     vals = {
@@ -606,7 +716,8 @@ def main():
         # the stage may grow past the text column to show the desktop diagram at full size (canvas padding + border = 34 px)
         'STAGEW': str(round(float(re.search(r'viewBox="\S+ \S+ (\S+)', svg_desk).group(1)) + 34)),
         'DATA': json.dumps({'steps': steps, 'meta': meta, 'labels': labels, 'title': scene['title'],
-                            'lead': scene.get('lead', ''), 'colors': D.node_colors(scene), 'legend': scene.get('legend', [])},
+                            'lead': scene.get('lead', ''), 'colors': D.node_colors(scene), 'legend': scene.get('legend', []),
+                            'ends': {ed['key']: [ed['from'], ed['to']] for ed in scene['edges']}},
                            ensure_ascii=False).replace('<', '\\u003c'),
         'MIME': mime, 'AUDIO': base64.b64encode(data).decode(),
         'DIAGRAMCSS': D.diagram_css(theme), 'THEME': theme,
@@ -617,7 +728,7 @@ def main():
     open(out, 'w').write(page)
     for wmsg in warnings:
         log('warning:', wmsg)
-    print(json.dumps({'ok': True, 'out': out, 'engine': engine, 'seconds': round(t, 1), 'steps': nsteps, 'recap': len(recap),
+    print(json.dumps({'ok': True, 'out': out, 'engine': engine, 'seconds': round(t, 1), 'voice': {'cached': CACHE['hit'], 'spoken': CACHE['made']}, 'steps': nsteps, 'recap': len(recap), 'whatif': len(whatif),
                       'cues': sum(len(s['cues']) for s in steps if not s.get('recap')), 'kb': len(page) // 1024, 'warnings': warnings}))
 
 

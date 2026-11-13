@@ -73,7 +73,7 @@
   // Run JSON.stringify(window.__cx.selftest()) in the browser pane. It moves every control to its ends and
   // checks the page after each move: script errors, sideways scroll, cut-off or overlapping picture text,
   // text that is too small or too large, content wider than its card, and controls that change nothing.
-  const errors = []
+  const errors = [], extras = []
   addEventListener('error', e => errors.push(String(e.message)))
   addEventListener('unhandledrejection', e => errors.push(String(e.reason)))
 
@@ -153,6 +153,8 @@
       ranges.forEach((c, i) => set(c, starts[i]))
       kit.stopAll()
     }
+    const info = {}
+    for (const extra of extras) extra({ say, look, info })       // a narrated page checks its story here
     const isStatic = document.body.hasAttribute('data-static')
     if (!isStatic && !ranges.length && !selects.length && !buttons.length) say('the page has no control; give it the control the real system has, or mark it static')
     if (!stage.querySelector('.verdict')) say('no element has class "verdict"; state the result in one plain line under the picture')
@@ -162,11 +164,11 @@
     return {
       ok: problems.size === 0, width: innerWidth,
       theme: root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-      checked: { pictureTexts: texts, sliders: ranges.length, menus: selects.length, buttons: buttons.length },
+      checked: { pictureTexts: texts, sliders: ranges.length, menus: selects.length, buttons: buttons.length, ...info },
       problems: [...problems].slice(0, 30).map(([msg, when]) => !when.length ? msg : `${msg} (when ${when[0]}${when.length > 1 ? `, and in ${when.length - 1} more states` : ''})`),
     }
   }
 
   window.kit = kit
-  window.__cx = { selftest, errors }
+  window.__cx = { selftest, errors, extras }
 })()
