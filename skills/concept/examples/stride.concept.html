@@ -12,11 +12,26 @@ lead: Each message takes the next Redis counter value n. The left ring steps one
   <button id="four">Send burst of 4</button>
   <button id="play">Play</button>
   <button id="reset">Reset</button>
-  <span class="row">Redis counter n = <b id="count">4</b></span>
 </div>
-<div class="grid">
-  <section class="card" id="plain"></section>
-  <section class="card" id="jump"></section>
+<div class="frame">
+  <aside class="side">
+    <div>
+      <div class="readout"><b id="msg">Message 4</b><span>the Redis counter value n</span></div>
+      <div class="readout minor"><b id="rule">(n × 7) % 12</b><span>picks the partition for message n</span></div>
+      <div class="readout minor"><b id="gold">0.618 × 12 ≈ 7</b><span>the golden stride for this ring</span></div>
+    </div>
+    <div class="legend">
+      <h3>How to read it</h3>
+      <span class="chip"><span class="dot hollow"></span>Green ring: one of the last 4 messages</span>
+      <span class="chip"><span class="dot"></span>Arrow: the order the messages arrived</span>
+      <span class="chip c-sky"><span class="dot line"></span>Outer arc: the partitions of one consumer</span>
+      <div class="cap">Bars: messages per partition so far.</div>
+    </div>
+  </aside>
+  <div class="grid">
+    <section class="card" id="plain"></section>
+    <section class="card" id="jump"></section>
+  </div>
 </div>
 <script>
 const { el, polar, arc, gcd, arrow, defs, bars, bind, play } = kit
@@ -74,7 +89,8 @@ function ring(card, title, formula, stride) {
 
 function draw() {
   const g = golden(N)
-  el('partsVal').textContent = N; el('strideVal').textContent = S; el('count').textContent = n
+  el('partsVal').textContent = N; el('strideVal').textContent = S
+  el('msg').textContent = `Message ${n}`; el('rule').textContent = `(n × ${S}) % ${N}`; el('gold').textContent = `0.618 × ${N} ≈ ${g}`
   ring(el('plain'), 'Plain counter, stride 1', `partition = n % ${N}`, 1)
   ring(el('jump'), `Stride ${S}` + (S === g ? ` (golden: 0.618 × ${N} ≈ ${g})` : ''), `partition = (n × ${S}) % ${N}`, S)
 }

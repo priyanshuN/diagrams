@@ -1,12 +1,13 @@
 /* Shared tokens: the page greys, the accent, and the meaning colours. Pictures (flow), narrated pages (walkthrough) and concept pages all start from this file. */
-:root{--bg:#f6f6f3;--ink:#1b1c1a;--mut:#5c5e5a;--faint:#8b8d88;--surf:#fff;--line:#dfe0db;--acc:#0d7a54;--wash:#dbf0e5;--done:#eff0ec;--onacc:#fff;--bad:#b9461a;--badwash:#fbe6dc;--warn:#9a5a06;--warnwash:#fbeed2;--grp:#f3f4f0;--bar:#fafaf8}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101211;--ink:#e8eae7;--mut:#9da19c;--faint:#6f7470;--surf:#171a18;--line:#2b2f2c;--acc:#3dcc90;--wash:#133426;--done:#1e2220;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--warn:#f0a63a;--warnwash:#3a2a10;--grp:#141716;--bar:#141716}}
-:root[data-theme=dark]{--bg:#101211;--ink:#e8eae7;--mut:#9da19c;--faint:#6f7470;--surf:#171a18;--line:#2b2f2c;--acc:#3dcc90;--wash:#133426;--done:#1e2220;--onacc:#05130c;--bad:#f39060;--badwash:#3a2014;--warn:#f0a63a;--warnwash:#3a2a10;--grp:#141716;--bar:#141716}
+/* The look: a warm off-white card (--surf) on a slightly darker warm page (--bg), thin warm-grey lines, muted colours that each mean one thing. */
+:root{--bg:#ebe9df;--ink:#1f1e1d;--mut:#5e5d59;--faint:#87867f;--surf:#faf9f5;--line:#d9d6ca;--acc:#237a5e;--wash:#e1f0ea;--done:#efede4;--onacc:#fff;--bad:#b5432a;--badwash:#f9e4dc;--warn:#96600f;--warnwash:#f7ecd3;--grp:#f3f1ea;--bar:#f5f4ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1a1917;--ink:#ecebe6;--mut:#a6a49c;--faint:#77756e;--surf:#242321;--line:#3a3936;--acc:#5fc4a0;--wash:#1c3a30;--done:#2c2b28;--onacc:#0b1a14;--bad:#f08c66;--badwash:#3d2217;--warn:#e8a84a;--warnwash:#3a2c12;--grp:#1f1e1c;--bar:#1f1e1c}}
+:root[data-theme=dark]{--bg:#1a1917;--ink:#ecebe6;--mut:#a6a49c;--faint:#77756e;--surf:#242321;--line:#3a3936;--acc:#5fc4a0;--wash:#1c3a30;--done:#2c2b28;--onacc:#0b1a14;--bad:#f08c66;--badwash:#3d2217;--warn:#e8a84a;--warnwash:#3a2c12;--grp:#1f1e1c;--bar:#1f1e1c}
 /* meaning colours: who runs a box, how a branch ends. --c is the strong colour, --cw its wash. */
-.c-emerald{--c:#0d7a54;--cw:#dbf0e5}.c-sky{--c:#0369a1;--cw:#dcf0fb}.c-amber{--c:#9a5a06;--cw:#fbeed2}
-.c-slate{--c:#4b5869;--cw:#e8ecf1}.c-rose{--c:#be123c;--cw:#fde3e8}.c-teal{--c:#0f766e;--cw:#d4f1ec}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .c-emerald{--c:#3dcc90;--cw:#133426}:root:not([data-theme=light]) .c-sky{--c:#56bdf0;--cw:#0f2b3c}
- :root:not([data-theme=light]) .c-amber{--c:#f0a63a;--cw:#3a2a10}:root:not([data-theme=light]) .c-slate{--c:#a3b0bf;--cw:#232b34}
- :root:not([data-theme=light]) .c-rose{--c:#f47a8f;--cw:#3b1820}:root:not([data-theme=light]) .c-teal{--c:#3cc6b4;--cw:#0f3330}}
-:root[data-theme=dark] .c-emerald{--c:#3dcc90;--cw:#133426}:root[data-theme=dark] .c-sky{--c:#56bdf0;--cw:#0f2b3c}:root[data-theme=dark] .c-amber{--c:#f0a63a;--cw:#3a2a10}
-:root[data-theme=dark] .c-slate{--c:#a3b0bf;--cw:#232b34}:root[data-theme=dark] .c-rose{--c:#f47a8f;--cw:#3b1820}:root[data-theme=dark] .c-teal{--c:#3cc6b4;--cw:#0f3330}
+.c-emerald{--c:#237a5e;--cw:#e1f0ea}.c-sky{--c:#2f6fb0;--cw:#e4edf8}.c-amber{--c:#96600f;--cw:#f7ecd3}
+.c-slate{--c:#57606a;--cw:#ebeae4}.c-rose{--c:#b43a4e;--cw:#fae4e4}.c-teal{--c:#1f7a72;--cw:#dcefeb}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .c-emerald{--c:#5fc4a0;--cw:#1c3a30}:root:not([data-theme=light]) .c-sky{--c:#74b3ee;--cw:#1a2c40}
+ :root:not([data-theme=light]) .c-amber{--c:#e8a84a;--cw:#3a2c12}:root:not([data-theme=light]) .c-slate{--c:#aab0b6;--cw:#2e2f30}
+ :root:not([data-theme=light]) .c-rose{--c:#f08a96;--cw:#3d1f23}:root:not([data-theme=light]) .c-teal{--c:#5cc6b8;--cw:#17332f}}
+:root[data-theme=dark] .c-emerald{--c:#5fc4a0;--cw:#1c3a30}:root[data-theme=dark] .c-sky{--c:#74b3ee;--cw:#1a2c40}:root[data-theme=dark] .c-amber{--c:#e8a84a;--cw:#3a2c12}
+:root[data-theme=dark] .c-slate{--c:#aab0b6;--cw:#2e2f30}:root[data-theme=dark] .c-rose{--c:#f08a96;--cw:#3d1f23}:root[data-theme=dark] .c-teal{--c:#5cc6b8;--cw:#17332f}

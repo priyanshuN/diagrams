@@ -20,7 +20,7 @@ trace file(s) ─► diagrams:trace ──► Mermaid sequence (one run, or two 
 idea.concept.html ─► diagrams:concept ─► interactive page, checked by a page self-test
 ```
 
-All pages share one look: `skills/flow/tokens.css` holds the greys, the accent and the meaning colours.
+All pages share one look, a warm off-white panel with thin lines and muted colours: `skills/flow/tokens.css` holds the greys, the accent and the meaning colours.
 
 ## Install (each machine, once)
 

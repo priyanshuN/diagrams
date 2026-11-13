@@ -64,9 +64,22 @@ lead: Each message takes the next Redis counter value n. The left ring steps one
   <label>Partitions <input type="range" id="parts" min="8" max="24" step="1" value="12"><span class="val" id="partsVal">12</span></label>
   <button id="four">Send burst of 4</button>
 </div>
-<div class="grid">
-  <section class="card" id="plain"></section>
-  <section class="card" id="jump"></section>
+<div class="frame">
+  <aside class="side">
+    <div>
+      <div class="readout"><b id="msg">Message 4</b><span>the Redis counter value n</span></div>
+      <div class="readout minor"><b id="rule">(n × 7) % 12</b><span>picks the partition for message n</span></div>
+    </div>
+    <div class="legend">
+      <h3>How to read it</h3>
+      <span class="chip"><span class="dot hollow"></span>Green ring: one of the last 4 messages</span>
+      <span class="chip c-sky"><span class="dot line"></span>Outer arc: the partitions of one consumer</span>
+    </div>
+  </aside>
+  <div class="grid">
+    <section class="card" id="plain"></section>
+    <section class="card" id="jump"></section>
+  </div>
 </div>
 <script>
 const { el, polar, arc, arrow, defs, bars, bind } = kit
@@ -83,7 +96,8 @@ draw()
 - **On load, show a result.** Start in a state where something has already happened (4 messages sent, one burst sent), so the first thing the reader sees is the idea, not an empty picture.
 - **Every control must change the page.** The self-test in section 5 fails a slider or a button that changes nothing. A change to a `.val` counts. A button may do nothing in one state (Reset at the start) if it does something after the sliders move.
 - **Pick the baseline that isolates the reader's question.** "Why do we need both numbers?" means: remove one number and draw what is left. When several simpler methods exist, do not pick the best-known one; pick the one whose difference from the idea is the answer.
-- **Every mark has a name.** A dot, a colour or a line that the reader must decode gets a label in the picture or a `.chip` under it.
+- **Every mark has a name.** A dot, a colour or a line that the reader must decode gets a label in the picture, a `.chip` under it, or an entry in the frame's "How to read it" legend.
+- **Keep a fixed frame; only the data moves.** Put the cards in a `.frame`. Its side column holds, at the top, the one number the reader should watch (a `.readout`: "Message 4", "Hour 23.3") and the rule with its live numbers, and at the bottom a `.legend` titled "How to read it". These stay in place while the pictures change, so the reader learns the layout once. A value that belongs to one method (the load on each consumer) stays in that method's card.
 
 ### A picture that runs over time
 
@@ -101,11 +115,14 @@ Some ideas need a clock (a rate limiter, a retry, a queue).
 |---|---|
 | `.controls` | a row of controls that wraps by itself; one row for settings, one for actions |
 | `label` + `input[type=range]` + `.val` | a setting and its live value (your `draw()` writes the value) |
+| `.frame` > `.side` + `.grid` | the figure: one panel with a fixed side column and the cards. Inside a frame the cards have no border of their own. On a phone the side column goes on top |
+| `.readout` (`<b>` + `<span>`) | in `.side`: a large live value and a short grey caption under it. Use one large readout, then `.readout.minor` for a formula or a second value. Your `draw()` writes the `<b>` |
+| `.legend` (`<h3>` + `.chip` rows + optional `.cap`) | in `.side`, at the bottom: "How to read it". One chip per mark. `.dot` is a filled dot, `.dot.hollow` a ring, `.dot.line` a short thick line; a `c-*` class on the chip colours it |
 | `.grid` > `.card` | one card per method; side by side on a wide page, stacked on a phone |
 | `.card h2`, `.formula` | the method's name, and its formula with the live numbers |
 | `svg.pic` | the picture, one per card: `viewBox`, `role="img"`, and an `aria-label` that says what it shows |
 | `.row` (with `<b>` for values) | a readout line; also works inside `.controls` for a counter or a clock |
-| `.chip` + `.dot` | a legend entry, placed inside a `.row`; the dot is the accent colour, or the chip's `c-*` colour. A chip may carry a value ("Consumer A: 2") |
+| `.chip` + `.dot` | a legend entry, placed inside a `.row` or the `.legend`; the dot is the accent colour, or the chip's `c-*` colour. A chip may carry a value ("Consumer A: 2") |
 | `.verdict` + a tone | the result line (tones below) |
 | `kit.bars(counts)` + `.cap` | a small bar chart and its caption |
 
@@ -153,6 +170,7 @@ Helpers that draw return a string; join the strings into the card's `innerHTML`.
 ## 3. Rules for the look
 
 - **Colours come only from tokens and `c-*` classes.** Tokens: `var(--ink)`, `--mut`, `--line`, `--surf`, `--acc` (the accent: the active thing), `--warn`, `--bad`. Classes `c-sky`, `c-amber`, `c-slate`, `c-teal`, `c-rose`, `c-emerald` set `--c` and `--cw` for a category. A hex or `rgb()` colour breaks dark mode, and the build warns.
+- **The look is a warm off-white panel on a slightly darker warm page**, with thin warm-grey lines and muted colours. Dark mode is the same idea on warm near-black. You get this from the tokens; do not add backgrounds, shadows or gradients.
 - **Neutral, plus one accent, plus at most three category colours.** Colour says "active" or "which group"; it is never decoration. Every category colour gets a `.chip` legend.
 - **Lines are thin (1 to 1.5 px) and stop at the edge of a shape.** Use `kit.arrow` with `pad`. A line must never cross a label.
 - **Picture text is 12 or 13 px, in a `viewBox` 320 to 360 wide.** A phone card is about 320 px wide, so that width keeps text at full size. A card on a wide page is about 500 px, so always cap the growth: `style="max-width:440px"` on a 340-wide picture (about 1.3 times the `viewBox` width). Without the cap the picture text grows larger than the page text, and the self-test fails.

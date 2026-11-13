@@ -2,6 +2,11 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
+## 0.4.0 (2026-11-13)
+
+- New default colours for every page (flow pictures, walkthroughs, concept pages): a warm off-white panel on a slightly darker warm page, warm-grey lines and muted meaning colours, with a matching warm dark mode. Only `skills/flow/tokens.css` changed; `--theme sketch` keeps its own paper colours.
+- Concept pages: a fixed figure frame. `.frame` holds a side column with `.readout` (the one live number, and the rule) and a "How to read it" `.legend`, next to the cards. `.dot.hollow` and `.dot.line` are new legend marks. The stride example uses the frame; pages without a frame still build.
+
 ## 0.3.0 (2026-11-12)
 
 - New skill `concept`: an interactive page that shows how an idea behaves (an algorithm, a number, a policy). It has no picture types: the skill gives rules, a page shell, drawing helpers (`kit`), a build (`cx`) and a page self-test (`window.__cx.selftest()`), and Claude draws the shape the idea has. Two examples: a golden-ratio stride on a ring of Kafka partitions, and retry backoff with jitter on a time axis.
