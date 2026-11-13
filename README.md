@@ -5,7 +5,7 @@ A Claude Code plugin for diagrams that explain. It has four skills, and the ques
 | The reader asks | Skill | Output |
 |---|---|---|
 | What talks to what? In what order? | `diagrams:flow` | text in chat, or a picture page |
-| Walk me through this flow | `diagrams:walkthrough` | the picture with a voice, cues and a quiz |
+| Walk me through this flow | `diagrams:walkthrough` | the picture with a voice, a camera that follows it, and a quiz |
 | What did this run do? What changed between two runs? | `diagrams:trace` | a sequence diagram of a recorded run, or a diff of two |
 | How does this idea behave? Why this number? | `diagrams:concept` | an interactive page: a picture, its controls, one result line |
 

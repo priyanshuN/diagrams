@@ -2,6 +2,15 @@
 
 Installed copies update only when the version in `.claude-plugin/plugin.json` goes up. See "Releases" in the README.
 
+## 0.5.0 (2026-11-13)
+
+- Walkthrough: a camera follows the voice. The frame moves to the boxes a step or cue names (never closer than 1.2 times the drawn size, never farther than 0.75 times), a box or arrow appears when the voice first names it, and a box cut by the frame fades out. The overview and "Test me" show the whole diagram. A "Follow the voice" switch turns the camera off.
+- Walkthrough on a phone: the stage is a square that stays on screen with the caption under it, in place of one tall column that pushed the caption off screen.
+- Walkthrough of a sequence: a message appears when a step first lights it. A sequence too large to read whole gets a frame around the lit message, with the participants' names pinned at the top.
+- Walkthrough: the caption lights word by word while the voice plays, and a box's name in the caption takes the box's colour. Paused, the whole caption stays readable.
+- Walkthrough: three optional scene fields. `title` is a step's headline, shown above the caption and in the step list. `state` replaces a box's second line with what the box holds now, when the data lands. `recap` is 2 to 4 points spoken at the end over the whole diagram.
+- Walkthrough: the build warns about a box that no step names. The page self-test reports the label size in the camera frames and a `state` text wider than its box. Image export always gives the whole diagram.
+
 ## 0.4.0 (2026-11-13)
 
 - New default colours for every page (flow pictures, walkthroughs, concept pages): a warm off-white panel on a slightly darker warm page, warm-grey lines and muted meaning colours, with a matching warm dark mode. Only `skills/flow/tokens.css` changed; `--theme sketch` keeps its own paper colours.

@@ -28,12 +28,13 @@ KOKORO_TORCH = 'hexgrad/Kokoro-82M'
 # Apple silicon runs Kokoro on MLX; every other machine runs the same model on PyTorch (CPU).
 USE_MLX = sys.platform == 'darwin' and platform.machine() == 'arm64'
 VOICE_RE = re.compile(r'^[abjzefhip][fm]_[a-z]+$')
-VERSION = 4
+VERSION = 6
 
 TOP_KEYS = {'title', 'lead', 'voice', 'speed', 'cols', 'lexicon', 'repo', 'nodes', 'groups', 'edges', 'steps', 'legend',
-            'diagram', 'look', 'theme'}
-STEP_KEYS = {'say', 'caption', 'focus', 'edges', 'msgs', 'cues', 'ask', 'src', 'item', 'carry'}
-CUE_KEYS = {'at', 'focus', 'edges', 'msgs', 'item', 'carry'}
+            'diagram', 'look', 'theme', 'recap'}
+STEP_KEYS = {'say', 'caption', 'title', 'focus', 'edges', 'msgs', 'cues', 'ask', 'src', 'item', 'carry', 'state'}
+CUE_KEYS = {'at', 'focus', 'edges', 'msgs', 'item', 'carry', 'state'}
+RECAP_KEYS = {'text', 'focus', 'edges', 'msgs'}
 _edge_key = D._edge_key
 
 
@@ -166,6 +167,7 @@ def validate(scene):
     ekeys = {e['key'] for e in scene['edges']}
     seq = scene['type'] == 'sequence'
     nmsg = len(scene['edges'])
+    kinds = {n.get('id'): n.get('kind') for n in scene['nodes']}
 
     def check_item(where, obj):
         it = obj.get('item')
@@ -174,6 +176,19 @@ def validate(scene):
             errs.append(f'{where}: "item" must be {{"name": "...", "fields": {{"key": "value"}}}}')
         if 'carry' in obj and not (isinstance(obj['carry'], str) and 0 < len(obj['carry']) <= 18):
             errs.append(f'{where}: "carry" must be a short label (18 characters or fewer)')
+        st = obj.get('state')
+        if st is None:
+            return
+        if seq:
+            errs.append(f'{where}: "state" changes the second line of a flow box; a sequence has none')
+        elif not (isinstance(st, dict) and st and all(isinstance(v, str) and 0 < len(v) <= 30 for v in st.values())):
+            errs.append(f'{where}: "state" must be {{"box id": "short text"}} (30 characters or fewer)')
+        else:
+            for n in st:
+                if n not in idset:
+                    errs.append(f'{where}: unknown node "{n}" in state')
+                elif kinds.get(n) == 'decision':
+                    errs.append(f'{where}: "state" cannot change a decision; "{n}" has room for one line only')
 
     def check_refs(where, obj):
         check_item(where, obj)
@@ -200,6 +215,8 @@ def validate(scene):
             errs.append(f'{w}: unknown key "{k}"')
         if not (s.get('say') or s.get('caption')):
             errs.append(f'{w}: needs "caption" (and optionally "say")')
+        if 'title' in s and not (isinstance(s['title'], str) and 0 < len(s['title']) <= 60):
+            errs.append(f'{w}: "title" must be a short headline (60 characters or fewer)')
         check_refs(w, s)
         for j, c in enumerate(s.get('cues', [])):
             for k in set(c) - CUE_KEYS:
@@ -209,6 +226,19 @@ def validate(scene):
             check_refs(f'{w} cue {j + 1}', c)
         if 'ask' in s and not (isinstance(s['ask'], dict) and s['ask'].get('q') and s['ask'].get('a')):
             errs.append(f'{w}: "ask" needs "q" and "a"')
+    if 'recap' in scene:
+        rc = scene['recap']
+        if not (isinstance(rc, list) and 2 <= len(rc) <= 4 and all(isinstance(p, (str, dict)) for p in rc)):
+            errs.append('"recap" must be a list of 2 to 4 points: a sentence, or {"text": "...", "focus": ["box"]}')
+        else:
+            scene['recap'] = [{'text': p} if isinstance(p, str) else p for p in rc]
+            for j, p in enumerate(scene['recap']):
+                w = f'recap point {j + 1}'
+                for k in set(p) - RECAP_KEYS:
+                    errs.append(f'{w}: unknown key "{k}"')
+                if not (isinstance(p.get('text'), str) and norm_words(p['text'])):
+                    errs.append(f'{w}: needs "text", one spoken sentence')
+                check_refs(w, p)
     if scene.get('voice') and not VOICE_RE.match(scene['voice']):
         errs.append(f'voice "{scene["voice"]}" is not a Kokoro voice name like af_heart')
     if errs:
@@ -383,6 +413,43 @@ def place_cues(scene, spoken, words_per_step, lex):
     return placed, errors
 
 
+def caption_times(caption, words, t0, dur):
+    """One start time (absolute seconds) for each whitespace-separated word of the caption, so the page can
+    light the caption as it is spoken. A caption word that is also spoken takes the spoken time. A run of
+    other words ("₹842.82" spoken as five words, or a caption that differs from "say") is spread over the
+    words spoken in the same place, or over the time between its neighbours when nothing was spoken there."""
+    import difflib
+    cap = [norm_word(w) for w in caption.split()]
+    n = len(cap)
+    got = [norm_word(w[0]) for w in words]
+    at = [None] * n                      # caption word -> index of the spoken word it matches
+    for blk in difflib.SequenceMatcher(None, cap, got, autojunk=False).get_matching_blocks():
+        for k in range(blk.size):
+            if cap[blk.a + k]:
+                at[blk.a + k] = blk.b + k
+    times = [None if j is None else words[j][1] for j in at]
+    i = 0
+    while i < n:
+        if at[i] is not None:
+            i += 1
+            continue
+        j = i
+        while j < n and at[j] is None:
+            j += 1
+        run = j - i
+        lo_w = at[i - 1] + 1 if i else 0                   # spoken words that fall in this run
+        hi_w = at[j] if j < n else len(words)
+        if hi_w > lo_w:
+            vals = [words[lo_w + k * (hi_w - lo_w) // run][1] for k in range(run)]
+        else:
+            lo = times[i - 1] if i else 0.0
+            hi = times[j] if j < n else max(dur - 0.3, lo)
+            vals = [lo + (hi - lo) * (k + 1) / (run + 1) for k in range(run)]
+        times[i:j] = vals
+        i = j
+    return [round(t0 + x, 2) for x in times]
+
+
 # ---------------------------------------------------------------- main
 
 def page_script_error():
@@ -427,7 +494,11 @@ def main():
         log(f'voice "{voice}" is not a Kokoro voice name'); print(json.dumps({'ok': False, 'error': 'bad voice'})); sys.exit(2)
     speed = args.speed or scene.get('speed', 1.0)
     lex = load_lexicon(scene)
-    spoken = [speakable(s.get('say') or s['caption'], lex) for s in scene['steps']]
+    recap = scene.get('recap', [])
+    nsteps = len(scene['steps'])
+    # one spoken line for each step, then one for each recap point
+    spoken = [speakable(s.get('say') or s['caption'], lex) for s in scene['steps']] + [speakable(p['text'], lex) for p in recap]
+    where = [f'step {i + 1}' for i in range(nsteps)] + [f'recap point {j + 1}' for j in range(len(recap))]
 
     warnings = []
     theme = scene.get('theme', 'clean')
@@ -436,9 +507,28 @@ def main():
     for i, line in enumerate(spoken):
         left = re.findall(r'[^\w\s.,;:!?\'"()\[\]/ˈˌ$%+=-]', re.sub(r'\[[^\]]+\]\(/[^)]*/\)', '', line))
         if left:
-            warnings.append(f'step {i + 1}: spoken line still has symbols {sorted(set(left))}; add them to the lexicon')
-        if len(line.split()) > 45:
-            warnings.append(f'step {i + 1}: spoken line has {len(line.split())} words; split the step (aim for under 40)')
+            warnings.append(f'{where[i]}: spoken line still has symbols {sorted(set(left))}; add them to the lexicon')
+        if i >= nsteps and len(line.split()) > 22:
+            warnings.append(f'{where[i]}: has {len(line.split())} words; a recap point is one short sentence (aim for under 20)')
+        elif len(line.split()) > 45:
+            warnings.append(f'{where[i]}: spoken line has {len(line.split())} words; split the step (aim for under 40)')
+    box_w = next(iter(D.layout(scene['nodes'], 1, False)[0].values()))[2] if scene['type'] != 'sequence' else 0
+    if scene['type'] != 'sequence':
+        # the camera view draws a box when a step first names it, or lights an arrow that ends at it
+        named = set()
+        for part in [p for s in scene['steps'] for p in [s] + s.get('cues', [])]:
+            named.update(part.get('focus', []))
+            named.update(n for pair in part.get('edges', []) for n in pair)
+        for n in scene['nodes']:
+            if n['id'] not in named:
+                warnings.append(f'box "{n["id"]}" is not named by any step ("focus" or a lit edge), so the walk never shows it')
+    for i, s in enumerate(scene['steps']):
+        if len(s.get('title', '').split()) > 8:
+            warnings.append(f'step {i + 1}: "title" has {len(s["title"].split())} words; a headline has 8 or fewer')
+        for part in [s] + s.get('cues', []):
+            for n, v in (part.get('state') or {}).items():
+                if D.text_w(v, 12) > box_w - 16:
+                    warnings.append(f'step {i + 1}: state "{v}" is probably wider than the box "{n}"; shorten it')
 
     if args.check:
         pipe = kokoro_pipeline(voice[0])
@@ -455,8 +545,8 @@ def main():
             words_per_step.append([(tk.text, 0.0, 0.0) for tk in toks if re.search(r'\w', tk.text)])
             notable = [f'{t.text}=/{t.phonemes}/' for t in toks
                        if t.phonemes and (NOTABLE.search(t.text) or t.text in lex)]
-            preview.append({'step': i + 1, 'say': line, 'check_these': notable})
-        errors += place_cues(scene, spoken, words_per_step, lex)[1]
+            preview.append({'step': i + 1 if i < nsteps else where[i], 'say': line, 'check_these': notable})
+        errors += place_cues(scene, spoken, words_per_step[:nsteps], lex)[1]
         print(json.dumps({'ok': not warnings and not errors, 'errors': errors, 'warnings': warnings,
                           'pronunciation': preview}, ensure_ascii=False, indent=1))
         sys.exit(2 if errors else 0)
@@ -475,7 +565,7 @@ def main():
             log(f'Kokoro failed ({ex!r}); using the system voice')
             synth = fallback_synth(spoken)
 
-    placed, errors = place_cues(scene, spoken, [w for _, w in synth], lex)
+    placed, errors = place_cues(scene, spoken, [w for _, w in synth[:nsteps]], lex)
     if errors:
         log('cue errors:\n' + '\n'.join(errors))
         print(json.dumps({'ok': False, 'error': 'cue errors', 'errors': errors})); sys.exit(2)
@@ -483,12 +573,27 @@ def main():
     chunks, t, steps = [], 0.0, []
     for i, (s, (clip, words)) in enumerate(zip(scene['steps'], synth)):
         cues = [{'t': round(t + words[j][1], 3), 'focus': c.get('focus', []),
-                 'edges': lit_keys(c), 'item': c.get('item'), 'carry': c.get('carry')}
+                 'edges': lit_keys(c), 'item': c.get('item'), 'carry': c.get('carry'), 'state': c.get('state')}
                 for c, j in placed[i]]
-        steps.append({'t': round(t, 3), 'caption': s.get('caption') or s['say'],
-                      'focus': s.get('focus', []), 'edges': lit_keys(s),
+        caption = s.get('caption') or s['say']
+        steps.append({'t': round(t, 3), 'title': s.get('title'), 'caption': caption,
+                      'wt': caption_times(caption, words, t, len(clip) / SR),
+                      'focus': s.get('focus', []), 'edges': lit_keys(s), 'state': s.get('state'),
                       'cues': cues, 'ask': s.get('ask'), 'src': srcs[i], 'item': s.get('item'), 'carry': s.get('carry')})
         chunks += [clip, gap]; t += (len(clip) + len(gap)) / SR
+    if recap:
+        # the recap is one last step: the camera shows the whole diagram, and each point lights its boxes as it is spoken
+        pts = []
+        for p, (clip, words) in zip(recap, synth[nsteps:]):
+            pts.append({'t': round(t, 3), 'text': p['text'], 'wt': caption_times(p['text'], words, t, len(clip) / SR),
+                        'focus': p.get('focus', []), 'edges': lit_keys(p)})
+            chunks += [clip, gap]; t += (len(clip) + len(gap)) / SR
+        steps.append({'t': pts[0]['t'], 'recap': True, 'title': 'Recap', 'caption': ' '.join(p['text'] for p in pts), 'wt': [],
+                      'points': [{k: p[k] for k in ('t', 'text', 'wt')} for p in pts],
+                      'focus': pts[0]['focus'], 'edges': pts[0]['edges'], 'state': None,
+                      'cues': [{'t': p['t'], 'focus': p['focus'], 'edges': p['edges'], 'item': None, 'carry': None, 'state': None}
+                               for p in pts[1:]],
+                      'ask': None, 'src': [], 'item': None, 'carry': None})
     mime, data = encode(np.concatenate(chunks))
 
     meta = {'version': VERSION, 'seconds': round(t, 2), 'engine': engine, 'built': datetime.date.today().isoformat(),
@@ -512,8 +617,8 @@ def main():
     open(out, 'w').write(page)
     for wmsg in warnings:
         log('warning:', wmsg)
-    print(json.dumps({'ok': True, 'out': out, 'engine': engine, 'seconds': round(t, 1), 'steps': len(steps),
-                      'cues': sum(len(s['cues']) for s in steps), 'kb': len(page) // 1024, 'warnings': warnings}))
+    print(json.dumps({'ok': True, 'out': out, 'engine': engine, 'seconds': round(t, 1), 'steps': nsteps, 'recap': len(recap),
+                      'cues': sum(len(s['cues']) for s in steps if not s.get('recap')), 'kb': len(page) // 1024, 'warnings': warnings}))
 
 
 if __name__ == '__main__':
